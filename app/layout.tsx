@@ -20,7 +20,7 @@ const fontMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'FOUNDER OS',
+  title: 'NLG OS',
   description: 'Personal operating system and AI agent command center for a single person company',
 };
 

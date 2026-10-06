@@ -222,7 +222,7 @@ export default async function HomePage() {
     <div className="os-slab">
       <SlabTitle
         eyebrow="command center"
-        title={`${greeting()}, Alex`}
+        title={`${greeting()}, Thiago`}
         meta={
           /* Honest state-of-the-world line  -  what needs you, straight from live data */
           <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px]">
