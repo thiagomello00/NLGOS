@@ -100,7 +100,17 @@ describe('buildLifeMap', () => {
 
 describe('lifeAreaForDepartment', () => {
   test('maps every seeded department to a life area', () => {
-    for (const dept of ['dept-sales', 'dept-marketing-growth', 'dept-tech', 'dept-finance', 'dept-comms']) {
+    for (const dept of [
+      'dept-sales',
+      'dept-growth',
+      'dept-leadership',
+      'dept-finance',
+      'dept-client-success',
+      'dept-content',
+      'dept-production',
+      'dept-post-production',
+      'dept-paid-media',
+    ]) {
       const area = lifeAreaForDepartment(dept);
       expect(area, `no life area for ${dept}`).toBeTruthy();
       expect(LIFE_AREAS.some((a) => a.id === area!.id)).toBe(true);
@@ -109,9 +119,9 @@ describe('lifeAreaForDepartment', () => {
 
   test('sales is sales; marketing/growth is marketing; comms is communication; finance is finances; tech is knowledge', () => {
     expect(lifeAreaForDepartment('dept-sales')?.id).toBe('sales');
-    expect(lifeAreaForDepartment('dept-marketing-growth')?.id).toBe('marketing');
-    expect(lifeAreaForDepartment('dept-comms')?.id).toBe('communication');
+    expect(lifeAreaForDepartment('dept-growth')?.id).toBe('marketing');
+    expect(lifeAreaForDepartment('dept-client-success')?.id).toBe('communication');
     expect(lifeAreaForDepartment('dept-finance')?.id).toBe('finances');
-    expect(lifeAreaForDepartment('dept-tech')?.id).toBe('knowledge');
+    expect(lifeAreaForDepartment('dept-leadership')?.id).toBe('knowledge');
   });
 });

@@ -120,7 +120,7 @@ export const realAgents: RuntimeAgent[] = [
     id: 'conductor',
     name: 'Conductor',
     description: 'Broadcast fan-out + instance host availability (Clawline gateway, Ollama, tmux) for future bindings.',
-    departmentId: 'dept-tech',
+    departmentId: 'dept-leadership',
     async run() {
       const stack = await localStackStatus();
       return {
@@ -137,7 +137,7 @@ export const realAgents: RuntimeAgent[] = [
     name: 'Comms Digest',
     description:
       'The 9am report: scrapes the last 24h across all four inboxes, WhatsApp and Slack, and ranks who Alex needs to respond to — calls first, then clients, students and family, brand deals, group chats, companies last. Also lists what to unsubscribe from.',
-    departmentId: 'dept-comms',
+    departmentId: 'dept-client-success',
     async run(): Promise<AgentRunResult> {
       const { runAndStoreCommsDigest, digestSummary } = await import('@/lib/comms-digest-run');
       const result = await runAndStoreCommsDigest();
@@ -151,7 +151,7 @@ export const realAgents: RuntimeAgent[] = [
     id: 'comms-agent',
     name: 'Comms Agent',
     description: 'Aggregates the Gmail/WhatsApp/Slack workers that feed the unified /comms view.',
-    departmentId: 'dept-comms',
+    departmentId: 'dept-client-success',
     async run() {
       const [gmail, whatsapp, slack] = await Promise.all([gmailRun(), whatsappRun(), slackRun()]);
       const live = [gmail, whatsapp, slack].filter((r) => r.ok).length;
@@ -162,16 +162,16 @@ export const realAgents: RuntimeAgent[] = [
       };
     },
   },
-  { id: 'gmail-worker', name: 'Gmail Worker', description: 'Unread counts and recent mail from up to four IMAP inboxes.', departmentId: 'dept-comms', run: gmailRun },
-  { id: 'whatsapp-worker', name: 'WhatsApp Worker', description: 'Local WhatsApp ChatStorage, read-only.', departmentId: 'dept-comms', run: whatsappRun },
-  { id: 'slack-worker', name: 'Slack Worker', description: 'Latest messages across joined Slack channels.', departmentId: 'dept-comms', run: slackRun },
+  { id: 'gmail-worker', name: 'Gmail Worker', description: 'Unread counts and recent mail from up to four IMAP inboxes.', departmentId: 'dept-client-success', run: gmailRun },
+  { id: 'whatsapp-worker', name: 'WhatsApp Worker', description: 'Local WhatsApp ChatStorage, read-only.', departmentId: 'dept-client-success', run: whatsappRun },
+  { id: 'slack-worker', name: 'Slack Worker', description: 'Latest messages across joined Slack channels.', departmentId: 'dept-client-success', run: slackRun },
 
   // ── Studio instance + content workers ────────────────────────────────
   {
     id: 'social-agent',
     name: 'Social Agent',
     description: 'Aggregates the Postly publishing and Adsmith ad-generation workers.',
-    departmentId: 'dept-marketing-growth',
+    departmentId: 'dept-growth',
     async run() {
       const [zernio, arcads] = await Promise.all([zernioRun(), arcadsRun()]);
       const live = [zernio, arcads].filter((r) => r.ok).length;
@@ -184,13 +184,13 @@ export const realAgents: RuntimeAgent[] = [
       };
     },
   },
-  { id: 'postly-publisher', name: 'Postly Publisher', description: 'Six platforms under @alexx.ai via Postly.', departmentId: 'dept-marketing-growth', run: zernioRun },
-  { id: 'adsmith-creative', name: 'Adsmith Creative', description: 'UGC ads for Vantage via the Adsmith API.', departmentId: 'dept-marketing-growth', run: arcadsRun },
+  { id: 'postly-publisher', name: 'Postly Publisher', description: 'Publishes connected platforms via Postly.', departmentId: 'dept-growth', run: zernioRun },
+  { id: 'adsmith-creative', name: 'Adsmith Creative', description: 'UGC ads via the Adsmith API.', departmentId: 'dept-paid-media', run: arcadsRun },
   {
     id: 'reelkit-editor',
     name: 'Reelkit Editor',
     description: 'Editing and rendering pipeline for social clips, captions, and promotional cuts.',
-    departmentId: 'dept-marketing-growth',
+    departmentId: 'dept-post-production',
     async run() {
       const stack = await localStackStatus();
       return {
@@ -204,7 +204,7 @@ export const realAgents: RuntimeAgent[] = [
     id: 'renderly-creative',
     name: 'Renderly Creative',
     description: 'Renderly creative generation for campaign visuals and product assets.',
-    departmentId: 'dept-marketing-growth',
+    departmentId: 'dept-production',
     async run() {
       const stack = await localStackStatus();
       return {
@@ -218,7 +218,7 @@ export const realAgents: RuntimeAgent[] = [
     id: 'dmflow-mcp',
     name: 'DMFlow MCP',
     description: 'DMFlow MCP/API lane for social DM automations and lead capture.',
-    departmentId: 'dept-marketing-growth',
+    departmentId: 'dept-growth',
     run: envIntegrationRun('DMFlow', 'MANYCHAT_API_KEY', 'DM automation and lead capture'),
   },
 
@@ -239,18 +239,18 @@ export const realAgents: RuntimeAgent[] = [
   },
   {
     id: 'launchpad-cohort-sales',
-    name: 'Launchpad Cohort',
+    name: 'Revenue Attribution',
     // The webinar funnel is retired, so this lane runs on
     // Trakyo attribution alone.
     description:
-      'Launchpad Cohort sales lane: Trakyo revenue attribution, plus offer/call/payment context.',
+      'Revenue attribution lane: Trakyo content-to-revenue context for NLG Agency sales.',
     departmentId: 'dept-sales',
     async run() {
       const trakyo = await trakyoStatus();
       const live = trakyo.state === 'connected';
       return {
         ok: live,
-        summary: `Launchpad Cohort · Trakyo ${trakyo.state}${
+        summary: `Revenue attribution · Trakyo ${trakyo.state}${
           live ? '' : ' — no live attribution source for this lane'
         }`,
         data: { trakyo },
@@ -259,38 +259,38 @@ export const realAgents: RuntimeAgent[] = [
   },
   {
     id: 'vantage-sales',
-    name: 'Vantage',
-    description: 'Vantage sales lane: pipeline, PayKit context, payments, and call data.',
+    name: 'Pipeline Lane',
+    description: 'Agency sales lane: pipeline, payment context, and call data. Runtime id preserved.',
     departmentId: 'dept-sales',
-    run: plannedLaneRun('Vantage sales', 'connect Vantage-specific CRM/payment/call sources'),
+    run: plannedLaneRun('Pipeline lane', 'connect CRM/payment/call sources'),
   },
   {
     id: 'paykit-sales',
     name: 'PayKit',
     description: 'PayKit offer/payment/customer context for Sales.',
-    departmentId: 'dept-sales',
+    departmentId: 'dept-finance',
     run: envIntegrationRun('PayKit', 'PAYKIT_API_KEY', 'offers, customers, and payment context'),
   },
   {
     id: 'vantage-paykit',
-    name: 'Vantage PayKit',
-    description: 'PayKit lane specifically under Vantage.',
+    name: 'PayKit Lane',
+    description: 'PayKit offer, payment, and customer context. Runtime id preserved.',
     departmentId: 'dept-sales',
-    run: envIntegrationRun('Vantage PayKit', 'PAYKIT_API_KEY', 'Vantage offer/payment context'),
+    run: envIntegrationRun('PayKit lane', 'PAYKIT_API_KEY', 'offer/payment context'),
   },
-  { id: 'stripe-sales', name: 'Stripe', description: 'Stripe payment confirmation for sales workflows.', departmentId: 'dept-sales', run: stripeSalesRun },
+  { id: 'stripe-sales', name: 'Stripe', description: 'Stripe payment confirmation for sales workflows.', departmentId: 'dept-finance', run: stripeSalesRun },
   {
     id: 'processor-confirmation',
     name: 'Processor Confirm',
     description: 'Confirms payment states across configured processor APIs.',
-    departmentId: 'dept-sales',
+    departmentId: 'dept-finance',
     run: processorConfirmationRun,
   },
   {
     id: 'flexpay-financing',
     name: 'FlexPay Financing',
     description: 'FlexPay financing options for offers and payment plans.',
-    departmentId: 'dept-sales',
+    departmentId: 'dept-finance',
     run: envIntegrationRun('FlexPay', 'FLEXPAY_API_KEY', 'financing options for sales offers'),
   },
   {
@@ -333,7 +333,7 @@ export const realAgents: RuntimeAgent[] = [
     id: 'data-agent',
     name: 'Data Agent',
     description: 'Analyzes markdown + vector storage health and surfaces ideas; answers broadcasts by querying G-Brain.',
-    departmentId: 'dept-tech',
+    departmentId: 'dept-leadership',
     async run() {
       const overview = await createGBrainProvider().overview();
       const { store, doctor } = overview;
@@ -375,7 +375,7 @@ export const realAgents: RuntimeAgent[] = [
     id: 'markdown-auditor',
     name: 'Markdown Auditor',
     description: 'Link health, orphans, duplicate titles and store-vs-index drift across the knowledge base.',
-    departmentId: 'dept-tech',
+    departmentId: 'dept-leadership',
     async run() {
       // It counted files until and reported green while the index
       // held Links: 0 on 1,038 pages. Counting is not auditing: this reads the
@@ -397,7 +397,7 @@ export const realAgents: RuntimeAgent[] = [
     id: 'vector-auditor',
     name: 'Vector Auditor',
     description: 'gbrain doctor: Supabase pgvector connection, embeddings, health score.',
-    departmentId: 'dept-tech',
+    departmentId: 'dept-leadership',
     async run() {
       const { doctor } = await createGBrainProvider().overview();
       const warn = doctor.checks.filter((c) => c.status !== 'ok');
@@ -437,7 +437,7 @@ export const realAgents: RuntimeAgent[] = [
   {
     id: 'crm-pulse',
     name: 'Ledger CRM',
-    description: 'Queries the Ledger deals pipeline (Vantage + Launchpad Cohort). Read-scoped.',
+    description: 'Queries the CRM deals pipeline. Read-scoped. HighLevel is the NLG source of truth once connected.',
     departmentId: 'dept-sales',
     async run() {
       const status = await attioStatus();
@@ -450,11 +450,11 @@ export const realAgents: RuntimeAgent[] = [
     id: 'client-roster',
     name: 'Client Roster',
     description: 'The live client list: funnel journeys reconciled with Ledger, counted by venture and status.',
-    departmentId: 'dept-clients',
+    departmentId: 'dept-client-success',
     async run() {
       const db = getDb();
       const journeys = db.funnel.journeys();
-      const converted = journeys.filter((j) => j.status === 'converted');
+      const converted = journeys.filter((j) => j.status === 'signed');
       const live = await attioClients();
       const servingAttio = live.state === 'connected' && live.clients.length > 0;
       const byVenture = new Map<string, number>();
@@ -479,7 +479,7 @@ export const realAgents: RuntimeAgent[] = [
     // Notion was the third rail here until it was retired; the
     // onboarding SOP no longer provisions a Notion workspace.
     description: 'Readiness check for the onboarding SOP: the Ledger trigger plus the Slack workspace it provisions.',
-    departmentId: 'dept-clients',
+    departmentId: 'dept-client-success',
     async run() {
       const { slackStatus } = await import('@/lib/connectors/slack');
       const [attio, slack] = await Promise.all([attioStatus(), slackStatus()]);
@@ -497,7 +497,7 @@ export const realAgents: RuntimeAgent[] = [
     id: 'client-success',
     name: 'Client Success',
     description: 'Servicing rails: Recall call notes and Plaud in-person recordings for deliverable tracking plus Slack for the check-in cadence.',
-    departmentId: 'dept-clients',
+    departmentId: 'dept-client-success',
     async run() {
       const { slackStatus } = await import('@/lib/connectors/slack');
       const { plaudConfigured } = await import('@/lib/connectors/plaud');
@@ -520,7 +520,7 @@ export const realAgents: RuntimeAgent[] = [
     id: 'stack-monitor',
     name: 'Stack Monitor',
     description: 'Live check of the local creative/infra stack: Reelkit, Ollama, command-center, Clawline, tmux, whisper, ffmpeg, renderly, gh.',
-    departmentId: 'dept-tech',
+    departmentId: 'dept-leadership',
     async run() {
       const [stack, wispr] = await Promise.all([localStackStatus(), wisprStatus()]);
       return {

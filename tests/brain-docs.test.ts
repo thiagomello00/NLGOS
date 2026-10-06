@@ -29,20 +29,17 @@ function docsFor(d: FounderDb) {
 }
 
 describe('buildBrainDocs', () => {
-  test('one doc per agent, sop, tool, person and pillar', () => {
+  test('one doc per agent, tool and pillar; SOPs and people stay empty until real NLG content lands', () => {
     const d = seeded();
     const docs = docsFor(d);
-    const paths = new Set(docs.map((x) => x.path));
     expect(docs.filter((x) => x.path.startsWith('agents/')).length).toBe(d.agents.all().length);
-    expect(docs.filter((x) => x.path.startsWith('sops/')).length).toBe(d.sopTasks.all().length);
+    expect(docs.filter((x) => x.path.startsWith('sops/')).length).toBe(0);
     expect(docs.filter((x) => x.path.startsWith('tools/')).length).toBe(d.tools.all().length);
-    expect(docs.filter((x) => x.path.startsWith('people/')).length).toBe(d.people.all().length);
+    expect(docs.filter((x) => x.path.startsWith('people/')).length).toBe(0);
     expect(docs.filter((x) => x.path.startsWith('org/pillar-')).length).toBe(d.departments.all().length);
-    expect(paths.has('agents/gmail-worker.md')).toBe(true);
-    expect(paths.has('sops/sop-gmail-worker.md')).toBe(true);
-    expect(paths.has('tools/imap.md')).toBe(true);
-    expect(paths.has('people/person-marco.md')).toBe(true);
-    expect(paths.has('org/pillar-clients.md')).toBe(true);
+    expect(docs.some((x) => x.path === 'agents/gmail-worker.md')).toBe(true);
+    expect(docs.some((x) => x.path === 'tools/imap.md')).toBe(true);
+    expect(docs.some((x) => x.path.startsWith('org/pillar-'))).toBe(true);
   });
 
   test('every doc carries the generated marker in frontmatter', () => {
@@ -50,40 +47,31 @@ describe('buildBrainDocs', () => {
     for (const doc of docs) expect(doc.content).toContain(GENERATED_MARKER);
   });
 
-  test('an agent doc holds its charter, SOP instructions and wikilinked tools', () => {
+  test('an agent doc holds its charter and wikilinked tools', () => {
     const docs = docsFor(seeded());
     const gmail = docs.find((x) => x.path === 'agents/gmail-worker.md')!.content;
     expect(gmail).toContain('IMAP Inboxes');
-    expect(gmail).toContain('Triage the four Gmail inboxes');
-    expect(gmail).toContain('Classify each thread');
     expect(gmail).toContain('[[imap]]');
-    expect(gmail).toContain('[[comms-agent]]'); // reports to
-    expect(gmail).toContain('[[pillar-communications]]');
+    expect(gmail).toContain('[[comms-agent]]');
   });
 
-  test('a SOP doc is built out: purpose, owner, trigger, steps, done, escalation', () => {
+  test('SOP docs are omitted until NLG SOPs are written', () => {
     const docs = docsFor(seeded());
-    const sop = docs.find((x) => x.path === 'sops/sop-client-onboarding.md')!.content;
-    for (const section of ['## Purpose', '## Owner', '## Trigger', '## Steps', '## Definition of done', '## Escalation']) {
-      expect(sop, `missing ${section}`).toContain(section);
-    }
-    expect(sop).toContain('closed-won');
-    expect(sop).toContain('[[client-onboarding]]');
+    expect(docs.filter((x) => x.path.startsWith('sops/'))).toEqual([]);
   });
 
   test('a tool doc lists who uses it, wikilinked', () => {
     const docs = docsFor(seeded());
     const ledger = docs.find((x) => x.path === 'tools/ledger.md')!.content;
     expect(ledger).toContain('[[sales-agent]]');
-    expect(ledger).toContain('[[person-marco]]');
   });
 
-  test('a pillar doc rosters its workers and SOPs', () => {
+  test('a pillar doc rosters its workers; people and SOPs stay empty until real NLG content lands', () => {
     const docs = docsFor(seeded());
-    const clients = docs.find((x) => x.path === 'org/pillar-clients.md')!.content;
+    const clients = docs.find((x) => x.path === 'org/pillar-client-success.md')!.content;
     expect(clients).toContain('[[client-roster]]');
-    expect(clients).toContain('[[person-sasha]]');
-    expect(clients).toContain('[[sop-client-onboarding]]');
+    expect(clients).not.toContain('[[person-sasha]]');
+    expect(clients).not.toContain('[[sop-client-onboarding]]');
   });
 
   test('deterministic output', () => {
@@ -109,6 +97,11 @@ describe('writeBrainDocs', () => {
     expect(second.skipped).toBeGreaterThan(0);
 
     // everything else regenerated cleanly
-    expect(readdirSync(path.join(dir, 'sops')).length).toBe(d.sopTasks.all().length);
+    const sopsDir = path.join(dir, 'sops');
+    if (d.sopTasks.all().length === 0) {
+      expect(existsSync(sopsDir)).toBe(false);
+    } else {
+      expect(readdirSync(sopsDir).length).toBe(d.sopTasks.all().length);
+    }
   });
 });

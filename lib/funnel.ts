@@ -12,14 +12,25 @@ import {
   type FunnelVenture,
 } from '@/lib/schemas';
 
-/** Canonical stage order with display labels — the 4–5 data points. */
+/** Canonical HighLevel pipeline stages — labels match the live GHL names. */
 export const FUNNEL_STAGES: { id: FunnelStage; label: string }[] = [
-  { id: 'first_touch', label: 'First touch' },
-  { id: 'engaged', label: 'Engaged' },
-  { id: 'nurtured', label: 'Nurtured' },
-  { id: 'opted_in', label: 'Opted in' },
-  { id: 'converted', label: 'Converted' },
+  { id: 'new_lead', label: 'New Lead' },
+  { id: 'scheduled_call', label: 'Scheduled Call' },
+  { id: 'no_show', label: 'No Show' },
+  { id: 'got_in_the_call', label: 'Got in the Call' },
+  { id: 'proposal_sent', label: 'Proposal Sent' },
+  { id: 'fu_interested_hi', label: 'FU - Interested - HI' },
+  { id: 'signed', label: 'Signed' },
+  { id: 'disqualified', label: 'Disqualified' },
 ];
+
+export function isWonStage(status: FunnelStage): boolean {
+  return status === 'signed';
+}
+
+export function isClosedStage(status: FunnelStage): boolean {
+  return status === 'signed' || status === 'disqualified';
+}
 
 const STAGE_INDEX: Record<FunnelStage, number> = Object.fromEntries(
   FUNNEL_STAGES.map((s, i) => [s.id, i]),
@@ -53,7 +64,7 @@ export const DECAY_FADE_START = 21;
  * the quiet clock, so movement is what keeps a lead vivid.
  */
 export function decayFactor(daysSinceLastTouch: number, status: FunnelStage): number {
-  if (status === 'converted') return 0;
+  if (isClosedStage(status)) return 0;
   return Math.min(1, Math.max(0, (daysSinceLastTouch - DECAY_FADE_START) / (DECAY_DAYS - DECAY_FADE_START)));
 }
 
@@ -64,15 +75,16 @@ export type JourneyState = 'converted' | 'stalled' | 'active' | 'decayed';
  * and the color-state the space renders — green once converted, red when a
  * pre-conversion lead has sat quiet past STALL_DAYS, blue otherwise, and
  * `decayed` (out of the space, into the archive) past DECAY_DAYS.
- * Incoming leads (still at first_touch) never stall: they render blue-ish
- * until they're engaged — but even they decay after 90 quiet days.
+ * Incoming leads (still at New Lead) never stall: they render blue-ish
+ * until they move — but even they decay after 90 quiet days. Signed and
+ * Disqualified are closed and never stall or fade.
  */
 export function journeyMeta(j: FunnelJourney, now: Date): { daysSinceLastTouch: number; state: JourneyState } {
   const lastAt = j.touches[j.touches.length - 1]?.at ?? j.createdAt;
   const days = Math.max(0, Math.floor((now.getTime() - new Date(`${lastAt}T00:00:00Z`).getTime()) / 86_400_000));
-  const canStall = j.status !== 'converted' && j.status !== 'first_touch';
+  const canStall = !isClosedStage(j.status) && j.status !== 'new_lead';
   const state: JourneyState =
-    j.status === 'converted'
+    isWonStage(j.status)
       ? 'converted'
       : days > DECAY_DAYS
         ? 'decayed'
@@ -102,7 +114,7 @@ export function attentionQueue(
     .filter(
       ({ j, meta }) =>
         meta.state === 'active' &&
-        j.status !== 'converted' &&
+        !isWonStage(j.status) &&
         j.likelihood >= PUSH_LIKELIHOOD &&
         // a fading lead is a save, not a push — even where stalling can't apply
         decayFactor(meta.daysSinceLastTouch, j.status) === 0,
@@ -114,7 +126,7 @@ export function attentionQueue(
     .filter(
       ({ j, meta }) =>
         meta.state !== 'decayed' &&
-        j.status !== 'converted' &&
+        !isWonStage(j.status) &&
         // Stalled counts as well as fading. Testing only "is it fading" left
         // days 8-20 in neither rail: red on the board, absent from the list of
         // what to do about it. Still disjoint from pushNow, which requires
@@ -220,7 +232,7 @@ export function funnelSpaceModel(journeys: FunnelJourney[], now: Date): FunnelSp
  * The organic/ads split keys off each journey's first touch.
  */
 export function funnelSummary(journeys: FunnelJourney[]): FunnelSummary {
-  const converted = journeys.filter((j) => j.status === 'converted');
+  const converted = journeys.filter((j) => isWonStage(j.status));
   const stages = FUNNEL_STAGES.map(({ id }, i) => {
     const reached = journeys.filter((j) => STAGE_INDEX[j.status] >= i);
     const firstChannel = (j: FunnelJourney) => j.touches[0]?.channel;

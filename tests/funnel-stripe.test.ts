@@ -23,7 +23,7 @@ const charge = (c: Partial<StripeChargeSlice> & Pick<StripeChargeSlice, 'id'>): 
 
 /** Win shorthand for merge tests. */
 const win = (w: Partial<StripeWin> & Pick<StripeWin, 'id'>): StripeWin => ({
-  venture: 'launchpad-cohort',
+  venture: 'nlg',
   email: null,
   name: null,
   amountUsd: 500,
@@ -35,8 +35,8 @@ const win = (w: Partial<StripeWin> & Pick<StripeWin, 'id'>): StripeWin => ({
 const journey = (id: string, name: string, over: Partial<FunnelJourney> = {}): FunnelJourney => ({
   id,
   name,
-  venture: 'launchpad-cohort',
-  status: 'opted_in',
+  venture: 'nlg',
+  status: 'proposal_sent',
   product: null,
   amountUsd: null,
   relationship: 'warm',
@@ -51,11 +51,11 @@ const journey = (id: string, name: string, over: Partial<FunnelJourney> = {}): F
   createdAt: '2026-06-01',
   touches: [
     {
-      id: `${id}-t1`, contactId: id, seq: 1, stage: 'first_touch',
+      id: `${id}-t1`, contactId: id, seq: 1, stage: 'new_lead',
       channel: 'crm', label: 'Deal created in Attio', source: 'attio', at: '2026-06-01',
     },
     {
-      id: `${id}-t2`, contactId: id, seq: 2, stage: 'opted_in',
+      id: `${id}-t2`, contactId: id, seq: 2, stage: 'proposal_sent',
       channel: 'crm', label: 'Attio stage: Proposal Sent', source: 'attio', at: '2026-06-20',
     },
   ],
@@ -66,11 +66,11 @@ describe('mapStripeCharges', () => {
   test('maps a settled charge with billing identity, amount in dollars, dated day-of-charge', () => {
     const [w] = mapStripeCharges(
       [charge({ id: 'ch_1', billing_details: { email: 'drew@x.com', name: 'Riley' }, description: 'AI Accelerator' })],
-      'launchpad-cohort',
+      'nlg',
     );
     expect(w).toEqual({
       id: 'ch_1',
-      venture: 'launchpad-cohort',
+      venture: 'nlg',
       email: 'drew@x.com',
       name: 'Riley',
       amountUsd: 500,
@@ -88,10 +88,10 @@ describe('mapStripeCharges', () => {
         charge({ id: 'ch_zero', amount: 0 }),
         charge({ id: 'ch_ok' }),
       ],
-      'vantage',
+      'nlg',
     );
     expect(wins.map((w) => w.id)).toEqual(['ch_ok']);
-    expect(wins[0].venture).toBe('vantage');
+    expect(wins[0].venture).toBe('nlg');
   });
 
   test('email falls through billing → receipt email → expanded customer; deleted/unexpanded give nothing', () => {
@@ -102,7 +102,7 @@ describe('mapStripeCharges', () => {
         charge({ id: 'ch_3', customer: { deleted: true, email: 'gone@x.com' } }),
         charge({ id: 'ch_4', customer: 'cus_unexpanded' }),
       ],
-      'vantage',
+      'nlg',
     );
     expect(wins[0]).toMatchObject({ email: 'kay@x.com', name: 'Kay' });
     expect(wins[1]).toMatchObject({ email: 'rcpt@x.com', name: null });
@@ -117,13 +117,13 @@ describe('mergeStripeWins', () => {
       [journey('j1', 'Riley Monroe', { email: 'riley@x.com' })],
       [win({ id: 'ch_1', email: 'Riley@X.com', product: 'AI Accelerator' })],
     );
-    expect(j.status).toBe('converted');
+    expect(j.status).toBe('signed');
     expect(j.relationship).toBe('hot');
     expect(j.likelihood).toBe(100);
     expect(j.product).toBe('AI Accelerator');
     expect(j.amountUsd).toBe(500);
     const last = j.touches.at(-1)!;
-    expect(last).toMatchObject({ stage: 'converted', channel: 'checkout', source: 'stripe', at: '2026-07-15', seq: 3 });
+    expect(last).toMatchObject({ stage: 'signed', channel: 'checkout', source: 'stripe', at: '2026-07-15', seq: 3 });
     expect(last.label).toContain('$500');
     // the CRM transit is untouched
     expect(j.touches[0].source).toBe('attio');
@@ -146,15 +146,15 @@ describe('mergeStripeWins', () => {
   test('an orphan charge becomes a standalone converted win instead of being dropped', () => {
     const merged = mergeStripeWins(
       [journey('j1', 'Someone Else')],
-      [win({ id: 'ch_9', email: 'new@x.com', name: 'New Buyer', venture: 'vantage', product: 'Build sprint' })],
+      [win({ id: 'ch_9', email: 'new@x.com', name: 'New Buyer', venture: 'nlg', product: 'Build sprint' })],
     );
     expect(merged).toHaveLength(2);
     const solo = merged[1];
     expect(solo).toMatchObject({
       id: 'stripe-ch_9',
       name: 'New Buyer',
-      venture: 'vantage',
-      status: 'converted',
+      venture: 'nlg',
+      status: 'signed',
       product: 'Build sprint',
       amountUsd: 500,
       email: 'new@x.com',
@@ -162,7 +162,7 @@ describe('mergeStripeWins', () => {
       likelihood: 100,
     });
     expect(solo.touches).toHaveLength(1);
-    expect(solo.touches[0]).toMatchObject({ stage: 'converted', channel: 'checkout', source: 'stripe' });
+    expect(solo.touches[0]).toMatchObject({ stage: 'signed', channel: 'checkout', source: 'stripe' });
   });
 
   test('orphan charges group by customer email — one journey, one touch per charge, amounts summed', () => {

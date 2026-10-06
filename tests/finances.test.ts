@@ -29,7 +29,7 @@ describe('incomeAccounts', () => {
     expect(mer.configured).toBe(true);
     expect(mer.live).toBe(true);
     expect(mer.income).toBe(4200);
-    expect(mer.label).toBe('Stripe · Vantage');
+    expect(mer.label).toBe('Stripe · 2');
   });
 
   test('Stripe goes live with its real month-to-date income when connected', () => {
@@ -134,16 +134,9 @@ describe('expenses', () => {
     ]);
   });
 
-  test('DECLARED_EXPENSES is a short illustrative placeholder, well-formed and positive', () => {
-    // Deliberately tiny: real fixed costs arrive via statement upload, never a
-    // hand-typed guess, so this list must never grow into a pretend ledger.
-    expect(DECLARED_EXPENSES.length).toBeLessThanOrEqual(3);
-    expect(DECLARED_EXPENSES.every((e) => e.monthly > 0)).toBe(true);
-    expect(DECLARED_EXPENSES.every((e) => e.id && e.label && e.category)).toBe(true);
-    expect(new Set(DECLARED_EXPENSES.map((e) => e.id)).size).toBe(DECLARED_EXPENSES.length);
-    expect(totalExpenses(DECLARED_EXPENSES)).toBe(
-      DECLARED_EXPENSES.reduce((sum, e) => sum + e.monthly, 0),
-    );
+  test('DECLARED_EXPENSES is empty — real costs arrive via statement upload', () => {
+    expect(DECLARED_EXPENSES).toEqual([]);
+    expect(totalExpenses(DECLARED_EXPENSES)).toBe(0);
   });
 });
 

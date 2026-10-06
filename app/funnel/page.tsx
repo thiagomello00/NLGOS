@@ -41,9 +41,7 @@ export const dynamic = 'force-dynamic';
 const STAGE_LABEL = Object.fromEntries(FUNNEL_STAGES.map((s) => [s.id, s.label]));
 
 const VENTURE_TABS: { id: FunnelVenture | 'all'; label: string }[] = [
-  { id: 'all', label: 'All clients' },
-  { id: 'vantage', label: 'Vantage' },
-  { id: 'launchpad-cohort', label: 'Launchpad Cohort' },
+  { id: 'all', label: 'NLG Agency' },
 ];
 
 const VIEWS: { id: 'flow' | 'radial'; label: string }[] = [
@@ -213,7 +211,7 @@ function JourneyRow({
   /** undefined = lookup not run (no segment selected) · null = no thread found */
   lastMsg?: CommsItem | null;
 }) {
-  const converted = journey.status === 'converted';
+  const converted = journey.status === 'signed';
   const meta = journeyMeta(journey, now);
   const entrySource = journey.touches[0]?.source;
   const lane =
@@ -376,7 +374,7 @@ export default async function FunnelPage({
               <Badge tone="ok">live · {liveLabel}</Badge>
             ) : (
               <Badge tone="warn" ghost>
-                demo data
+                empty · waiting on HighLevel
               </Badge>
             )}
             <span className="rounded-full border border-os-border px-4 py-2 text-[13px] tabular-nums text-os-muted">
@@ -395,7 +393,6 @@ export default async function FunnelPage({
               <Link
                 key={tab.id}
                 href={href(tab.id === 'all' ? undefined : (tab.id as FunnelVenture), view)}
-                title={tab.id !== 'all' && isLive ? 'Live split = name heuristic: Vantage when the form or call names it' : undefined}
                 data-lens="c" className={`pressable rounded-ctl border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
  active
  ? 'border-[var(--accent-line)] bg-[var(--accent-soft)] text-os-accent'

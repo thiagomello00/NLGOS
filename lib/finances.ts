@@ -82,15 +82,15 @@ export function incomeAccounts(
     {
       id: 'stripe',
       processor: 'Stripe',
-      label: 'Stripe · Launchpad Cohort',
+      label: 'Stripe',
       configured: configured.stripe ?? stripe.connected,
       live: stripe.connected,
       income: stripe.connected ? stripe.mtdUsd : null,
       incomeUpper: null, // Stripe reports per-charge; the month is always exact.
       unsplittableCustomers: 0,
     },
-    account('stripe-vantage', 'Stripe', 'Stripe · Vantage'),
-    account('paykit-lc', 'PayKit', 'PayKit · Launchpad Cohort'),
+    account('stripe-vantage', 'Stripe', 'Stripe · 2'),
+    account('paykit-lc', 'PayKit', 'PayKit'),
   ];
 }
 
@@ -116,14 +116,8 @@ export function hasUnsplittableIncome(accounts: IncomeAccount[]): boolean {
 
 export type ExpenseItem = { id: string; label: string; category: string; monthly: number };
 
-// A deliberately short placeholder list of recurring costs, shown only until a
-// statement upload takes over (the ledger replaces this section the moment one
-// is ingested). Keep it short and obviously illustrative: real fixed costs
-// belong in the ledger, not hand-typed here.
-export const DECLARED_EXPENSES: ExpenseItem[] = [
-  { id: 'contractor-csm', label: 'Contractor · CSM', category: 'Contractors', monthly: 1000 },
-  { id: 'software-stack', label: 'Core software stack', category: 'Software', monthly: 500 },
-];
+// Recurring costs belong in an uploaded statement, not a hand-typed demo list.
+export const DECLARED_EXPENSES: ExpenseItem[] = [];
 
 /** Sum of every recurring monthly cost. */
 export function totalExpenses(items: ExpenseItem[]): number {

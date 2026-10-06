@@ -22,8 +22,8 @@ const event = (e: Partial<TrakyoEvent> & Pick<TrakyoEvent, 'lead' | 'label' | 'a
 const journey = (id: string, name: string): FunnelJourney => ({
   id,
   name,
-  venture: 'launchpad-cohort',
-  status: 'engaged',
+  venture: 'nlg',
+  status: 'scheduled_call',
   product: null,
   amountUsd: null,
   relationship: 'warm',
@@ -38,11 +38,11 @@ const journey = (id: string, name: string): FunnelJourney => ({
   createdAt: '2026-06-01',
   touches: [
     {
-      id: `${id}-t1`, contactId: id, seq: 1, stage: 'first_touch',
+      id: `${id}-t1`, contactId: id, seq: 1, stage: 'new_lead',
       channel: 'crm', label: 'Deal created in Attio', source: 'attio', at: '2026-06-01',
     },
     {
-      id: `${id}-t2`, contactId: id, seq: 2, stage: 'engaged',
+      id: `${id}-t2`, contactId: id, seq: 2, stage: 'scheduled_call',
       channel: 'crm', label: 'Attio stage: Contacted', source: 'attio', at: '2026-06-10',
     },
   ],

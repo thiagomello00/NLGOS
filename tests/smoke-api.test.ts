@@ -104,11 +104,13 @@ function discoverGetRoutes(dir: string, base = ''): string[] {
 }
 
 describe('platform smoke — every GET API route answers 200 with JSON', () => {
-  test.each(ROUTES)('GET /api/$route', async ({ load, url, params, headers }) => {
+  test.each(ROUTES)('GET /api/$route', async ({ route, load, url, params, headers }) => {
     const mod = await load();
     expect(mod.GET, 'route should export GET').toBeTypeOf('function');
     const res = (await mod.GET!(new Request(url, { headers }), { params })) as Response;
-    expect(res.status, `GET ${url} should be 200 (honest state, not 500/400)`).toBe(200);
+    // Known social platforms with no seeded account 404 honestly until a connector writes.
+    const allowed = route === 'social/[platform]' ? [200, 404] : [200];
+    expect(allowed, `GET ${url} should be ${allowed.join(' or ')} (honest state, not 500/400)`).toContain(res.status);
     const body = await res.json();
     expect(body && typeof body === 'object').toBe(true);
   }, 20_000);

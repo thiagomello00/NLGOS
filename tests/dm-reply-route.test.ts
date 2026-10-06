@@ -40,6 +40,18 @@ describe('POST /api/social/dm/reply', () => {
 
     const { POST } = await import('@/app/api/social/dm/reply/route');
     const { getDb } = await import('@/lib/data');
+    getDb().social.upsertDmMessage({
+      id: 'prior-ig-alex',
+      platform: 'instagram',
+      subscriberId: 'ig-alex',
+      name: 'Alex',
+      handle: 'alex',
+      text: 'hey',
+      direction: 'in',
+      tag: null,
+      ts: '2026-07-18T10:00:00.000Z',
+      source: 'test',
+    });
 
     const res = await POST(post({ subscriberId: 'ig-alex', text: 'here is pricing' }));
     expect(res.status).toBe(200);

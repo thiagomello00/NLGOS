@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowUpRight, BarChart3, Brain, Clapperboard, ExternalLink, Megaphone, Play } from 'lucide-react';
+import { ArrowUpRight, Brain, Clapperboard, ExternalLink, Megaphone, Play } from 'lucide-react';
 import { getDb } from '@/lib/data';
 import { contentAgents } from '@/lib/content';
 import { contentVolume } from '@/lib/content-volume';
@@ -18,10 +18,6 @@ function postPillStyle(status: string) {
   const hue = status === 'published' ? 'var(--ok)' : status === 'failed' ? 'var(--err)' : status === 'scheduled' ? 'var(--warn)' : 'var(--muted)';
   return { background: `color-mix(in oklab, ${hue} 16%, transparent)`, color: hue };
 }
-
-// The Vantage content-intelligence system this view backlinks out to.
-const INTEL_URL = 'https://intel.example.com';
-const INTEL_ANALYTICS_URL = 'https://intel.example.com/my-analytics';
 
 function agoFrom(iso: string | null): string {
   if (!iso) return '';
@@ -212,10 +208,9 @@ export default async function ContentPage() {
         />
       </div>
 
-      {/* Three equal sections (Alex, 2026-08-13): the lead magnet index and
-          both Vantage intelligence surfaces, side by side. */}
-      <SlabCard i={6} title="Content intelligence" sub="3 surfaces" className="mt-6">
-        <div className="grid gap-3 px-6 pb-6 pt-4 md:grid-cols-3">
+      {/* Lead magnet index */}
+      <SlabCard i={6} title="Lead magnets" sub="in-OS index" className="mt-6">
+        <div className="grid gap-3 px-6 pb-6 pt-4">
           <BacklinkCard
             href="/content/lead-magnets"
             internal
@@ -223,18 +218,6 @@ export default async function ContentPage() {
             title="Lead Magnets"
             sub="Every landing page we ship, with the live link on each row."
             meta={`${leadMagnets.length} page${leadMagnets.length === 1 ? '' : 's'} · ${leadMagnets.filter((m) => m.status === 'live').length} live`}
-          />
-          <BacklinkCard
-            href={INTEL_URL}
-            mark="/vantage-mark.png"
-            title="Vantage Intel"
-            sub="Your content intelligence system  -  research, hooks, and what's working, feeding the content agent."
-          />
-          <BacklinkCard
-            href={INTEL_ANALYTICS_URL}
-            icon={BarChart3}
-            title="My Analytics"
-            sub="Per-piece performance and audience analytics from the intelligence system."
           />
         </div>
       </SlabCard>

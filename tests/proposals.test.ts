@@ -5,8 +5,8 @@ import { PROPOSAL_BRANDS, groupDeliverables } from '@/lib/board-deliverables';
 import type { Deliverable } from '@/lib/board-deliverables';
 
 /**
- * Proposals belong in the Deliverables section, as Vantage and Launchpad
- * Cohort folders pinned above the agent files.
+ * Proposals belong in the Deliverables section, as NLG Agency folders
+ * pinned above the agent files.
  *
  * They live in the DB rather than on disk because the OS runs on a host and
  * the proposal sources sit on a laptop — a filesystem scan would find nothing
@@ -19,8 +19,8 @@ afterEach(() => db?.close());
 const PROPOSAL: Proposal = {
   id: 'vantage-demo',
   client: 'Demo Client',
-  brand: 'vantage',
-  url: 'https://vantage-proposal-demo.example.com',
+  brand: 'nlg',
+  url: 'https://nlg-proposal-demo.example.com',
   status: 'sent',
   amountUsd: null,
   notes: '',
@@ -35,7 +35,7 @@ describe('ProposalSchema', () => {
   });
 
   test('only knows the two real brands', () => {
-    expect(PROPOSAL_BRANDS.map((b) => b.id)).toEqual(['vantage', 'launchpad-cohort']);
+    expect(PROPOSAL_BRANDS.map((b) => b.id)).toEqual(['nlg']);
     expect(() => ProposalSchema.parse({ ...PROPOSAL, brand: 'acme' })).toThrow();
   });
 
@@ -94,13 +94,13 @@ describe('groupDeliverables — proposal folders sit above the agent files', () 
   };
 
   test('proposal folders come first, in brand order, then Agent files', () => {
-    const groups = groupDeliverables([file], [PROPOSAL, { ...PROPOSAL, id: 'aa-1', brand: 'launchpad-cohort', client: 'Jordan Ellery' }]);
-    expect(groups.map((g) => g.name)).toEqual(['Vantage proposals', 'Launchpad Cohort proposals', 'Agent files']);
+    const groups = groupDeliverables([file], [PROPOSAL, { ...PROPOSAL, id: 'aa-1', brand: 'nlg', client: 'Jordan Ellery' }]);
+    expect(groups.map((g) => g.name)).toEqual(['NLG proposals', 'Agent files']);
   });
 
   test('an empty brand folder is not shown — no hollow subfolders', () => {
     const groups = groupDeliverables([file], [PROPOSAL]);
-    expect(groups.map((g) => g.name)).toEqual(['Vantage proposals', 'Agent files']);
+    expect(groups.map((g) => g.name)).toEqual(['NLG proposals', 'Agent files']);
   });
 
   test('the access code rides next to the client name', () => {
@@ -126,7 +126,7 @@ describe('groupDeliverables — proposal folders sit above the agent files', () 
 
   test('an empty board still shows the proposal folders', () => {
     const groups = groupDeliverables([], [PROPOSAL]);
-    expect(groups.map((g) => g.name)).toEqual(['Vantage proposals']);
+    expect(groups.map((g) => g.name)).toEqual(['NLG proposals']);
   });
 });
 
@@ -137,10 +137,10 @@ describe('groupDeliverables — proposal folders sit above the agent files', () 
  * proposals shipped empty to the host for exactly this reason.
  */
 describe('the seed guard back-fills proposals', () => {
-  test('data.ts checks proposals, so an existing DB gets them', async () => {
+  test('empty proposals are allowed — getDb does not treat them as an unseeded install', async () => {
     const { readFileSync } = await import('node:fs');
     const src = readFileSync(new URL('../lib/data.ts', import.meta.url), 'utf8');
-    expect(src).toMatch(/instance\.proposals\.all\(\)\.length === 0/);
+    expect(src).not.toMatch(/instance\.proposals\.all\(\)\.length === 0/);
   });
 });
 
@@ -202,7 +202,7 @@ describe('syncSeededProposals', () => {
       id TEXT PRIMARY KEY, client TEXT NOT NULL, brand TEXT NOT NULL, url TEXT NOT NULL,
       status TEXT NOT NULL, amount_usd REAL, notes TEXT NOT NULL DEFAULT '',
       created_at TEXT NOT NULL, origin TEXT NOT NULL DEFAULT 'seed');
-      INSERT INTO proposals VALUES ('old','Old Client','vantage','https://x.test','sent',
+      INSERT INTO proposals VALUES ('old','Old Client','nlg','https://x.test','sent',
         NULL,'','2026-01-01T00:00:00.000Z','os');`);
     const { migrateProposalsTable } = await import('@/lib/db');
     migrateProposalsTable(raw);

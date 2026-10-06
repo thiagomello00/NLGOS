@@ -178,12 +178,10 @@ export function resolveDeliverable(id: string, base: string = WORKSPACES_DIR): s
 /**
  * Proposal folders, pinned above the agent files (the operator, 2026-08-17).
  *
- * Order is fixed rather than alphabetical: Vantage is the main business and
- * should sit first regardless of how the brands happen to sort.
+ * Order is fixed rather than alphabetical.
  */
 export const PROPOSAL_BRANDS: { id: ProposalBrand; folder: string }[] = [
-  { id: 'vantage', folder: 'Vantage proposals' },
-  { id: 'launchpad-cohort', folder: 'Launchpad Cohort proposals' },
+  { id: 'nlg', folder: 'NLG proposals' },
 ];
 
 /** A row in the Deliverables list: a downloadable agent file, or a proposal

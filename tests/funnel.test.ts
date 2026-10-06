@@ -33,8 +33,8 @@ afterEach(() => {
 const contact = (over: Partial<FunnelContact> = {}): FunnelContact => ({
   id: 'fc-test',
   name: 'Test Client',
-  venture: 'vantage',
-  status: 'engaged',
+  venture: 'nlg',
+  status: 'scheduled_call',
   product: null,
   amountUsd: null,
   relationship: 'warm',
@@ -54,7 +54,7 @@ const touch = (over: Partial<FunnelTouch> = {}): FunnelTouch => ({
   id: 'ft-test',
   contactId: 'fc-test',
   seq: 1,
-  stage: 'first_touch',
+  stage: 'new_lead',
   channel: 'organic',
   label: 'IG reel: agency systems',
   source: 'trakyo',
@@ -71,7 +71,7 @@ describe('funnel repo', () => {
   test('round-trips a contact with touches ordered by seq', () => {
     db = openDb(':memory:');
     db.funnel.insertContact(contact());
-    db.funnel.insertTouch(touch({ id: 'ft-2', seq: 2, stage: 'engaged', channel: 'dm', label: 'DM reply' }));
+    db.funnel.insertTouch(touch({ id: 'ft-2', seq: 2, stage: 'scheduled_call', channel: 'dm', label: 'DM reply' }));
     db.funnel.insertTouch(touch({ id: 'ft-1', seq: 1 }));
     const journeys = db.funnel.journeys();
     expect(journeys).toHaveLength(1);
@@ -97,81 +97,22 @@ describe('funnel repo', () => {
     expect(j.linkedin).toBe('https://linkedin.com/in/gracelin-example');
   });
 
-  test('venture filter narrows journeys', () => {
+  test('venture filter returns the NLG pipeline', () => {
     db = openDb(':memory:');
-    db.funnel.insertContact(contact({ id: 'fc-m', venture: 'vantage' }));
-    db.funnel.insertContact(contact({ id: 'fc-aa', venture: 'launchpad-cohort' }));
-    expect(db.funnel.journeys('vantage').map((j) => j.id)).toEqual(['fc-m']);
-    expect(db.funnel.journeys('launchpad-cohort').map((j) => j.id)).toEqual(['fc-aa']);
+    db.funnel.insertContact(contact({ id: 'fc-m', venture: 'nlg' }));
+    db.funnel.insertContact(contact({ id: 'fc-aa', venture: 'nlg' }));
+    expect(db.funnel.journeys('nlg').map((j) => j.id).sort()).toEqual(['fc-aa', 'fc-m']);
     expect(db.funnel.journeys()).toHaveLength(2);
   });
 });
 
 describe('funnel seed', () => {
-  test('seeds 4–5 touch journeys for both ventures, converted rows carry product + amount', () => {
+  test('does not seed fake NLG leads — empty until HighLevel is connected', () => {
     db = openDb(':memory:');
     seedDatabase(db);
-    const all = db.funnel.journeys();
-    expect(all.length).toBeGreaterThanOrEqual(10);
-
-    for (const j of all) {
-      FunnelJourneySchema.parse(j);
-      expect(j.touches.length).toBeGreaterThanOrEqual(4);
-      expect(j.touches.length).toBeLessThanOrEqual(5);
-      // touches are a contiguous 1..n sequence in chronological order
-      expect(j.touches.map((t) => t.seq)).toEqual(j.touches.map((_, i) => i + 1));
-      expect(j.touches[0].stage).toBe('first_touch');
-    }
-
-    // both ventures represented
-    expect(new Set(all.map((j) => j.venture))).toEqual(new Set(['vantage', 'launchpad-cohort']));
-
-    // both acquisition lanes represented, with honest intended sources
-    const firsts = all.map((j) => j.touches[0]);
-    expect(firsts.some((t) => t.channel === 'organic' && t.source === 'trakyo')).toBe(true);
-    expect(firsts.some((t) => t.channel === 'ads' && t.source === 'meta-ads')).toBe(true);
-
-    // converted journeys end on a converted touch and carry the offer + amount
-    const converted = all.filter((j) => j.status === 'converted');
-    expect(converted.length).toBeGreaterThanOrEqual(4);
-    for (const j of converted) {
-      expect(j.touches.at(-1)?.stage).toBe('converted');
-      expect(j.product).toBeTruthy();
-      expect(j.amountUsd ?? 0).toBeGreaterThan(0);
-    }
-
-    // some journeys are honestly mid-funnel (not everyone converts)
-    expect(all.some((j) => j.status !== 'converted')).toBe(true);
-
-    // one seeded lead has decayed past 90 quiet days so the archive tab demos
-    const split = splitFunnelJourneys(all, new Date());
-    expect(split.archived.length).toBeGreaterThanOrEqual(1);
-    expect(split.active.length).toBeGreaterThanOrEqual(10);
-
-    // and one active lead sits mid-fade so the decay rendering always demos
-    const decays = funnelSpaceModel(split.active, new Date()).map((n) => n.decay);
-    expect(decays.some((d) => d > 0.3 && d < 1)).toBe(true);
-
-    // relationship + likelihood seeded for every client
-    for (const j of all) {
-      expect(['cold', 'warm', 'hot']).toContain(j.relationship);
-      expect(j.likelihood).toBeGreaterThanOrEqual(0);
-      expect(j.likelihood).toBeLessThanOrEqual(100);
-    }
-
-    // touch dates are relative to today, so stall states stay meaningful:
-    // at least one non-converted lead is stalled (>7d quiet) and one is active
-    const now = new Date();
-    const metas = all.filter((j) => j.status !== 'converted').map((j) => journeyMeta(j, now));
-    expect(metas.some((m) => m.state === 'stalled')).toBe(true);
-    expect(metas.some((m) => m.state === 'active')).toBe(true);
-    // and the freshest touch is genuinely recent (not a fixed 2026-06 date)
-    const freshest = Math.min(...metas.map((m) => m.daysSinceLastTouch));
-    expect(freshest).toBeLessThanOrEqual(3);
-
-    // re-seeding is idempotent
+    expect(db.funnel.journeys()).toEqual([]);
     seedDatabase(db);
-    expect(db.funnel.journeys()).toHaveLength(all.length);
+    expect(db.funnel.journeys()).toEqual([]);
   });
 });
 
@@ -184,7 +125,7 @@ describe('funnelSummary', () => {
   ): FunnelJourney => ({
     id,
     name: id,
-    venture: 'vantage',
+    venture: 'nlg',
     status,
     product: amountUsd ? 'Offer' : null,
     amountUsd,
@@ -203,7 +144,7 @@ describe('funnelSummary', () => {
         id: `${id}-t1`,
         contactId: id,
         seq: 1,
-        stage: 'first_touch',
+        stage: 'new_lead',
         channel: firstChannel,
         label: 'first',
         source: firstChannel === 'ads' ? 'meta-ads' : 'trakyo',
@@ -214,10 +155,10 @@ describe('funnelSummary', () => {
 
   test('computes reached-stage counts, organic/ads split, and stage→stage conversion', () => {
     const summary = funnelSummary([
-      journey('j1', 'organic', 'converted', 1000),
-      journey('j2', 'ads', 'converted', 500),
-      journey('j3', 'organic', 'opted_in'),
-      journey('j4', 'ads', 'engaged'),
+      journey('j1', 'organic', 'signed', 1000),
+      journey('j2', 'ads', 'signed', 500),
+      journey('j3', 'organic', 'proposal_sent'),
+      journey('j4', 'ads', 'scheduled_call'),
     ]);
     FunnelSummarySchema.parse(summary);
     expect(summary.clients).toBe(4);
@@ -226,12 +167,10 @@ describe('funnelSummary', () => {
     expect(summary.stages.map((s) => s.stage)).toEqual(FUNNEL_STAGES.map((s) => s.id));
 
     const byStage = Object.fromEntries(summary.stages.map((s) => [s.stage, s]));
-    expect(byStage.first_touch).toMatchObject({ total: 4, organic: 2, ads: 2, conversionFromPrev: null });
-    expect(byStage.engaged).toMatchObject({ total: 4, conversionFromPrev: 100 });
-    // a converted/opted_in journey progressed past nurtured even if it skipped the touch
-    expect(byStage.nurtured).toMatchObject({ total: 3, conversionFromPrev: 75 });
-    expect(byStage.opted_in).toMatchObject({ total: 3, organic: 2, ads: 1, conversionFromPrev: 100 });
-    expect(byStage.converted).toMatchObject({ total: 2, organic: 1, ads: 1, conversionFromPrev: 66.7 });
+    expect(byStage.new_lead).toMatchObject({ total: 4, organic: 2, ads: 2, conversionFromPrev: null });
+    expect(byStage.scheduled_call).toMatchObject({ total: 4, conversionFromPrev: 100 });
+    expect(byStage.signed).toMatchObject({ total: 2, organic: 1, ads: 1 });
+    expect(byStage.disqualified.total).toBe(0);
   });
 
   test('guards zero division on an empty journey set', () => {
@@ -256,7 +195,7 @@ describe('journeyMeta', () => {
   ): FunnelJourney => ({
     id: 'jm',
     name: 'jm',
-    venture: 'vantage',
+    venture: 'nlg',
     status,
     product: null,
     amountUsd: null,
@@ -272,7 +211,7 @@ describe('journeyMeta', () => {
     createdAt: at,
     touches: [
       {
-        id: 'jm-t1', contactId: 'jm', seq: 1, stage: 'first_touch',
+        id: 'jm-t1', contactId: 'jm', seq: 1, stage: 'new_lead',
         channel: 'organic', label: 'x', source: 'trakyo', at,
       },
     ],
@@ -280,40 +219,40 @@ describe('journeyMeta', () => {
 
   test('converted journeys are green regardless of quiet time', () => {
     const now = new Date('2026-07-02T12:00:00Z');
-    const meta = journeyMeta(journeyLastTouchedAt('converted', daysAgoIso(now, 30)), now);
+    const meta = journeyMeta(journeyLastTouchedAt('signed', daysAgoIso(now, 30)), now);
     expect(meta.state).toBe('converted');
   });
 
   test('a lead quiet for more than 7 days before converting is stalled (red)', () => {
     const now = new Date('2026-07-02T12:00:00Z');
-    const meta = journeyMeta(journeyLastTouchedAt('opted_in', daysAgoIso(now, 8)), now);
+    const meta = journeyMeta(journeyLastTouchedAt('proposal_sent', daysAgoIso(now, 8)), now);
     expect(meta.state).toBe('stalled');
     expect(meta.daysSinceLastTouch).toBe(8);
   });
 
   test('exactly 7 quiet days is still active — stall needs MORE than a week', () => {
     const now = new Date('2026-07-02T12:00:00Z');
-    expect(journeyMeta(journeyLastTouchedAt('engaged', daysAgoIso(now, 7)), now).state).toBe('active');
-    expect(journeyMeta(journeyLastTouchedAt('engaged', daysAgoIso(now, 2)), now).state).toBe('active');
+    expect(journeyMeta(journeyLastTouchedAt('scheduled_call', daysAgoIso(now, 7)), now).state).toBe('active');
+    expect(journeyMeta(journeyLastTouchedAt('scheduled_call', daysAgoIso(now, 2)), now).state).toBe('active');
   });
 
   test('incoming leads never stall — first_touch stays blue however long it sits', () => {
     const now = new Date('2026-07-02T12:00:00Z');
-    expect(journeyMeta(journeyLastTouchedAt('first_touch', daysAgoIso(now, 30)), now).state).toBe('active');
+    expect(journeyMeta(journeyLastTouchedAt('new_lead', daysAgoIso(now, 30)), now).state).toBe('active');
   });
 
   test('past 90 quiet days a non-converted lead decays into the archive', () => {
     const now = new Date('2026-07-02T12:00:00Z');
-    expect(journeyMeta(journeyLastTouchedAt('engaged', daysAgoIso(now, 91)), now).state).toBe('decayed');
-    expect(journeyMeta(journeyLastTouchedAt('first_touch', daysAgoIso(now, 120)), now).state).toBe('decayed');
-    expect(journeyMeta(journeyLastTouchedAt('engaged', daysAgoIso(now, 90)), now).state).toBe('stalled'); // exactly 90 is not decayed yet
-    expect(journeyMeta(journeyLastTouchedAt('converted', daysAgoIso(now, 200)), now).state).toBe('converted');
+    expect(journeyMeta(journeyLastTouchedAt('scheduled_call', daysAgoIso(now, 91)), now).state).toBe('decayed');
+    expect(journeyMeta(journeyLastTouchedAt('new_lead', daysAgoIso(now, 120)), now).state).toBe('decayed');
+    expect(journeyMeta(journeyLastTouchedAt('scheduled_call', daysAgoIso(now, 90)), now).state).toBe('stalled'); // exactly 90 is not decayed yet
+    expect(journeyMeta(journeyLastTouchedAt('signed', daysAgoIso(now, 200)), now).state).toBe('converted');
   });
 
   test('splitFunnelJourneys separates the live space from the archive', () => {
     const now = new Date('2026-07-02T12:00:00Z');
-    const fresh = journeyLastTouchedAt('engaged', daysAgoIso(now, 2));
-    const dead = { ...journeyLastTouchedAt('engaged', daysAgoIso(now, 120)), id: 'dead' };
+    const fresh = journeyLastTouchedAt('scheduled_call', daysAgoIso(now, 2));
+    const dead = { ...journeyLastTouchedAt('scheduled_call', daysAgoIso(now, 120)), id: 'dead' };
     const { active, archived } = splitFunnelJourneys([fresh, dead], now);
     expect(active.map((j) => j.id)).toEqual(['jm']);
     expect(archived.map((j) => j.id)).toEqual(['dead']);
@@ -322,16 +261,16 @@ describe('journeyMeta', () => {
 
 describe('decayFactor', () => {
   test('stays neutral through the fade start, ramps linearly, clamps at 1', () => {
-    expect(decayFactor(0, 'engaged')).toBe(0);
-    expect(decayFactor(DECAY_FADE_START, 'engaged')).toBe(0);
+    expect(decayFactor(0, 'scheduled_call')).toBe(0);
+    expect(decayFactor(DECAY_FADE_START, 'scheduled_call')).toBe(0);
     const mid = (DECAY_FADE_START + DECAY_DAYS) / 2;
-    expect(decayFactor(mid, 'engaged')).toBeCloseTo(0.5, 5);
-    expect(decayFactor(DECAY_DAYS, 'engaged')).toBe(1);
-    expect(decayFactor(500, 'engaged')).toBe(1);
+    expect(decayFactor(mid, 'scheduled_call')).toBeCloseTo(0.5, 5);
+    expect(decayFactor(DECAY_DAYS, 'scheduled_call')).toBe(1);
+    expect(decayFactor(500, 'scheduled_call')).toBe(1);
   });
 
   test('converted journeys never decay — the win stays green', () => {
-    expect(decayFactor(500, 'converted')).toBe(0);
+    expect(decayFactor(500, 'signed')).toBe(0);
   });
 });
 
@@ -364,7 +303,7 @@ describe('funnelSpaceModel', () => {
   ): FunnelJourney => ({
     id,
     name: id,
-    venture: 'launchpad-cohort',
+    venture: 'nlg',
     status,
     product: null,
     amountUsd: null,
@@ -383,25 +322,25 @@ describe('funnelSpaceModel', () => {
   });
 
   test('a full journey visits every hub in order and settles green on the conversion hub', () => {
-    const full = mkJourney('full', 'converted', [
-      mkTouch('full', 1, 'first_touch', 20, 'organic'),
-      mkTouch('full', 2, 'engaged', 18, 'dm'),
-      mkTouch('full', 3, 'nurtured', 15),
-      mkTouch('full', 4, 'opted_in', 12, 'call'),
-      mkTouch('full', 5, 'converted', 10, 'checkout'),
+    const full = mkJourney('full', 'signed', [
+      mkTouch('full', 1, 'new_lead', 20, 'organic'),
+      mkTouch('full', 2, 'scheduled_call', 18, 'dm'),
+      mkTouch('full', 3, 'fu_interested_hi', 15),
+      mkTouch('full', 4, 'proposal_sent', 12, 'call'),
+      mkTouch('full', 5, 'signed', 10, 'checkout'),
     ], { relationship: 'hot', likelihood: 100, product: 'Offer', amountUsd: 5000 });
     const [node] = funnelSpaceModel([full], NOW);
-    expect(node.hubs).toEqual([0, 1, 2, 3, 4]);
-    expect(node.currentHub).toBe(4);
+    expect(node.hubs).toEqual([0, 1, 5, 4, 6]);
+    expect(node.currentHub).toBe(6);
     expect(node.state).toBe('converted');
   });
 
   test('repeated-stage touches collapse to one hub visit; a quiet lead runs red', () => {
-    const stuck = mkJourney('stuck', 'engaged', [
-      mkTouch('stuck', 1, 'first_touch', 27, 'ads'),
-      mkTouch('stuck', 2, 'engaged', 27, 'ads'),
-      mkTouch('stuck', 3, 'engaged', 23, 'ads'),
-      mkTouch('stuck', 4, 'engaged', 21),
+    const stuck = mkJourney('stuck', 'scheduled_call', [
+      mkTouch('stuck', 1, 'new_lead', 27, 'ads'),
+      mkTouch('stuck', 2, 'scheduled_call', 27, 'ads'),
+      mkTouch('stuck', 3, 'scheduled_call', 23, 'ads'),
+      mkTouch('stuck', 4, 'scheduled_call', 21),
     ], { relationship: 'cold', likelihood: 15 });
     const [node] = funnelSpaceModel([stuck], NOW);
     expect(node.hubs).toEqual([0, 1]);
@@ -411,7 +350,7 @@ describe('funnelSpaceModel', () => {
   });
 
   test('identity fields ride onto the node for the dossier (AC52/AC54)', () => {
-    const j = mkJourney('who', 'engaged', [mkTouch('who', 1, 'first_touch', 1)], {
+    const j = mkJourney('who', 'scheduled_call', [mkTouch('who', 1, 'new_lead', 1)], {
       person: 'Riley Monroe',
       company: 'monroe Holdings LLC',
       role: 'C-level',
@@ -427,8 +366,8 @@ describe('funnelSpaceModel', () => {
   });
 
   test('node radius grows with likelihood-to-buy inside compact 2.5–5.5px bounds', () => {
-    const lo = mkJourney('lo', 'engaged', [mkTouch('lo', 1, 'first_touch', 1)], { likelihood: 0 });
-    const hi = mkJourney('hi', 'engaged', [mkTouch('hi', 1, 'first_touch', 1)], { id: 'hi', likelihood: 100 });
+    const lo = mkJourney('lo', 'scheduled_call', [mkTouch('lo', 1, 'new_lead', 1)], { likelihood: 0 });
+    const hi = mkJourney('hi', 'scheduled_call', [mkTouch('hi', 1, 'new_lead', 1)], { id: 'hi', likelihood: 100 });
     const [nLo, nHi] = funnelSpaceModel([lo, hi], NOW);
     expect(nHi.radius).toBeGreaterThan(nLo.radius);
     expect(nLo.radius).toBe(2.5);
@@ -436,8 +375,8 @@ describe('funnelSpaceModel', () => {
   });
 
   test('every node carries its decay factor for the fade-to-red rendering', () => {
-    const fresh = mkJourney('fresh', 'engaged', [mkTouch('fresh', 1, 'first_touch', 2)]);
-    const fading = mkJourney('fading', 'engaged', [mkTouch('fading', 1, 'first_touch', 80)], { id: 'fading' });
+    const fresh = mkJourney('fresh', 'scheduled_call', [mkTouch('fresh', 1, 'new_lead', 2)]);
+    const fading = mkJourney('fading', 'scheduled_call', [mkTouch('fading', 1, 'new_lead', 80)], { id: 'fading' });
     const [nFresh, nFading] = funnelSpaceModel([fresh, fading], NOW);
     expect(nFresh.decay).toBe(0);
     expect(nFading.decay).toBeGreaterThan(0.5);
@@ -459,8 +398,8 @@ describe('attentionQueue — what to act on today (AC55)', () => {
   ): FunnelJourney => ({
     id,
     name: id,
-    venture: 'vantage',
-    status: 'engaged',
+    venture: 'nlg',
+    status: 'scheduled_call',
     product: null,
     amountUsd: null,
     relationship: 'warm',
@@ -475,7 +414,7 @@ describe('attentionQueue — what to act on today (AC55)', () => {
     createdAt: daysAgo(quietDays + 10),
     touches: [
       {
-        id: `${id}-t1`, contactId: id, seq: 1, stage: 'engaged',
+        id: `${id}-t1`, contactId: id, seq: 1, stage: 'scheduled_call',
         channel: 'crm', label: 'x', source: 'attio', at: daysAgo(quietDays),
       },
     ],
@@ -491,10 +430,10 @@ describe('attentionQueue — what to act on today (AC55)', () => {
         lead('hot-a', { likelihood: 85 }, 2),
         lead('hot-b', { likelihood: 75 }, 3),
         lead('hot-c', { likelihood: 71 }, 4),
-        lead('won', { likelihood: 95, status: 'converted' }, 1), // converted — out
+        lead('won', { likelihood: 95, status: 'signed' }, 1), // converted — out
         lead('dying', { likelihood: 95 }, 30), // decaying — belongs to saveNow
         // first_touch never stalls, but a fading lead is a save, not a push
-        lead('fading-inbound', { likelihood: 95, status: 'first_touch' }, 30),
+        lead('fading-inbound', { likelihood: 95, status: 'new_lead' }, 30),
       ],
       NOW,
     );
@@ -518,7 +457,7 @@ describe('attentionQueue — what to act on today (AC55)', () => {
   });
 
   test('a fading first_touch lead is a save, never a push (it cannot stall)', () => {
-    const q = attentionQueue([lead('fading-inbound', { likelihood: 95, status: 'first_touch' }, 30)], NOW);
+    const q = attentionQueue([lead('fading-inbound', { likelihood: 95, status: 'new_lead' }, 30)], NOW);
     expect(q.pushNow).toEqual([]);
     expect(q.saveNow.map((j) => j.id)).toEqual(['fading-inbound']);
   });
@@ -546,7 +485,7 @@ describe('attentionQueue — what to act on today (AC55)', () => {
   });
 
   test('the rails stay mutually exclusive after the widening', () => {
-    for (const status of ['engaged', 'first_touch'] as const) {
+    for (const status of ['scheduled_call', 'new_lead'] as const) {
       for (let days = 0; days <= 120; days++) {
         const q = attentionQueue([lead(`x-${status}-${days}`, { likelihood: 90, status }, days)], NOW);
         expect(q.pushNow.length + q.saveNow.length, `${status} at ${days}d`).toBeLessThanOrEqual(1);

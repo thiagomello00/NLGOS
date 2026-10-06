@@ -102,7 +102,7 @@ export function FunnelNodeCard({ node, onClose }: { node: FunnelSpaceNode; onClo
             </div>
           )}
           <div className="mt-0.5 truncate font-mono text-[9.5px] uppercase tracking-wide text-os-dim">
-            {node.venture === 'vantage' ? 'Vantage' : 'Launchpad Cohort'} · {stageLabel}
+            {node.venture === 'nlg' ? 'NLG Agency' : node.venture} · {stageLabel}
             {dealDiffers ? ` · deal: ${node.name}` : ''}
           </div>
         </div>

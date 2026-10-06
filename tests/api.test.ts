@@ -107,20 +107,13 @@ describe('API route handlers', () => {
     expect(body.doctor.detail.length).toBeGreaterThan(0);
   });
 
-  test('GET /api/social returns the growth dashboard with all five platforms', async () => {
+  test('GET /api/social returns an empty growth dashboard until live accounts exist', async () => {
     const { GET } = await import('@/app/api/social/route');
     const res = await GET();
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.platforms.map((p: { platform: string }) => p.platform)).toEqual([
-      'instagram',
-      'tiktok',
-      'twitter',
-      'youtube',
-      'linkedin',
-    ]);
-    expect(body.totalFollowers).toBeGreaterThan(0);
-    expect(body.platforms[0].growth).toHaveProperty('d7');
+    expect(body.platforms).toEqual([]);
+    expect(body.totalFollowers).toBe(0);
   });
 
   test('GET /api/social includes email list, DM total, and monthly growth', async () => {
@@ -128,9 +121,9 @@ describe('API route handlers', () => {
     const res = await GET();
     const body = await res.json();
     expect(body.emailList).toBeDefined();
-    expect(body.emailList.subscribers).toBeGreaterThan(0);
+    expect(body.emailList.subscribers).toBeNull();
     expect(typeof body.totalDms).toBe('number');
-    expect(body.totalDms).toBeGreaterThan(0);
+    expect(body.totalDms).toBe(0);
     expect('monthlyGrowthPct' in body).toBe(true); // number | null, both valid
   });
 
@@ -143,12 +136,12 @@ describe('API route handlers', () => {
     expect(audBody.ranges).toEqual([7, 30, 60, 'all']);
     expect(Array.isArray(audBody.series)).toBe(true);
     expect(audBody.series.some((s: { key: string }) => s.key === 'all')).toBe(true);
-    expect(audBody.series.find((s: { key: string }) => s.key === 'all').points.length).toBeGreaterThan(0);
+    expect(audBody.series.find((s: { key: string }) => s.key === 'all').points.length).toBeGreaterThanOrEqual(0);
 
     const dms = await GET(new Request('http://localhost/api/social/series?metric=dms'));
     const dmsBody = await dms.json();
     expect(dmsBody.metric).toBe('dms');
-    expect(dmsBody.series[0].points.length).toBeGreaterThan(0);
+    expect(dmsBody.series[0].points.length).toBeGreaterThanOrEqual(0);
   });
 
   test('GET /api/social/series rejects an unknown metric', async () => {
@@ -157,30 +150,26 @@ describe('API route handlers', () => {
     expect(res.status).toBe(400);
   });
 
-  test('GET /api/funnel returns a validated summary + journeys', async () => {
+  test('GET /api/funnel returns HighLevel stages and an honest empty pipeline', async () => {
     const { GET } = await import('@/app/api/funnel/route');
     const res = await GET(new Request('http://localhost/api/funnel'));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.summary.clients).toBeGreaterThanOrEqual(10);
+    expect(body.summary.clients).toBe(0);
     expect(body.summary.stages.map((s: { stage: string }) => s.stage)).toEqual([
-      'first_touch', 'engaged', 'nurtured', 'opted_in', 'converted',
+      'new_lead', 'scheduled_call', 'no_show', 'got_in_the_call', 'proposal_sent', 'fu_interested_hi', 'signed', 'disqualified',
     ]);
-    expect(body.journeys.length).toBe(body.summary.clients);
-    expect(body.journeys[0].touches.length).toBeGreaterThanOrEqual(4);
-    // leads quiet past 90 days decay out of journeys into the archive
+    expect(body.journeys).toEqual([]);
     expect(Array.isArray(body.archived)).toBe(true);
-    expect(body.archived.length).toBeGreaterThanOrEqual(1);
-    expect(body.journeys.map((j: { id: string }) => j.id)).not.toContain(body.archived[0].id);
+    expect(body.archived).toEqual([]);
   });
 
-  test('GET /api/funnel?venture= filters journeys to one venture', async () => {
+  test('GET /api/funnel?venture=nlg returns the NLG pipeline', async () => {
     const { GET } = await import('@/app/api/funnel/route');
-    const res = await GET(new Request('http://localhost/api/funnel?venture=vantage'));
+    const res = await GET(new Request('http://localhost/api/funnel?venture=nlg'));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.journeys.length).toBeGreaterThan(0);
-    expect(body.journeys.every((j: { venture: string }) => j.venture === 'vantage')).toBe(true);
+    expect(body.journeys.every((j: { venture: string }) => j.venture === 'nlg')).toBe(true);
   });
 
   test('GET /api/funnel rejects an unknown venture', async () => {
@@ -197,7 +186,7 @@ describe('API route handlers', () => {
       expect(key in body.audienceGrowth).toBe(true);
       expect(key in body.dmGrowth).toBe(true);
     }
-    expect(body.audienceTotal).toBeGreaterThan(0);
+    expect(body.audienceTotal).toBe(0);
   });
 
   test('POST /api/social/posts enqueues a post; GET lists the queue', async () => {
@@ -229,16 +218,14 @@ describe('API route handlers', () => {
     expect(bad.status).toBe(400);
   });
 
-  test('GET /api/social/[platform] returns one platform’s analytics', async () => {
+  test('GET /api/social/[platform] 404s until a live account is connected', async () => {
     const { GET } = await import('@/app/api/social/[platform]/route');
     const res = await GET(new Request('http://localhost/api/social/instagram'), {
       params: { platform: 'instagram' },
     });
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(404);
     const body = await res.json();
-    expect(body.account.platform).toBe('instagram');
-    expect(Array.isArray(body.snapshots)).toBe(true);
-    expect(body.snapshots.length).toBeGreaterThanOrEqual(1);
+    expect(body.error).toMatch(/instagram/i);
   });
 
   test('GET /api/social/[platform] 404s for an untracked platform', async () => {

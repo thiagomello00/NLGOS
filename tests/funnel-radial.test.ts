@@ -6,7 +6,7 @@ const touch = (over: Partial<FunnelTouch> = {}): FunnelTouch => ({
   id: 'ft-test',
   contactId: 'fc-test',
   seq: 1,
-  stage: 'first_touch',
+  stage: 'new_lead',
   channel: 'organic',
   label: 'IG reel: agency systems',
   source: 'trakyo',
@@ -17,8 +17,8 @@ const touch = (over: Partial<FunnelTouch> = {}): FunnelTouch => ({
 const journey = (over: Partial<FunnelContact> = {}, touches: FunnelTouch[] = [touch()]): FunnelJourney => ({
   id: 'fc-test',
   name: 'Test Client',
-  venture: 'vantage',
-  status: 'engaged',
+  venture: 'nlg',
+  status: 'scheduled_call',
   product: null,
   amountUsd: null,
   relationship: 'warm',
@@ -114,9 +114,9 @@ describe('funnelRadialModel — outside → in', () => {
   test('all 7 segments always present, counts sum to journeys, converted tallied', () => {
     const js = [
       journey({ id: 'a' }, [touch({ label: 'IG reel: offer' })]),
-      journey({ id: 'b', status: 'converted', product: 'Mentorship', amountUsd: 6800 }, [
+      journey({ id: 'b', status: 'signed', product: 'Mentorship', amountUsd: 6800 }, [
         touch({ label: 'YT long-form: agency', at: '2026-06-20' }),
-        touch({ id: 't2', seq: 2, stage: 'converted', channel: 'checkout', label: 'Paid in full', at: '2026-07-01' }),
+        touch({ id: 't2', seq: 2, stage: 'signed', channel: 'checkout', label: 'Paid in full', at: '2026-07-01' }),
       ]),
       journey({ id: 'c' }, [touch({ label: 'Opportunity created in GHL', channel: 'crm' })]),
     ];
@@ -130,16 +130,16 @@ describe('funnelRadialModel — outside → in', () => {
 
   test('nodes carry segment index, ring path and current ring (stage depth)', () => {
     const js = [
-      journey({ id: 'won', status: 'converted' }, [
+      journey({ id: 'won', status: 'signed' }, [
         touch({ label: 'X thread: breakdown' }),
-        touch({ id: 't2', seq: 2, stage: 'engaged', channel: 'dm', label: 'DM convo', at: '2026-06-10' }),
-        touch({ id: 't3', seq: 3, stage: 'converted', channel: 'checkout', label: 'Paid', at: '2026-06-20' }),
+        touch({ id: 't2', seq: 2, stage: 'scheduled_call', channel: 'dm', label: 'DM convo', at: '2026-06-10' }),
+        touch({ id: 't3', seq: 3, stage: 'signed', channel: 'checkout', label: 'Paid', at: '2026-06-20' }),
       ]),
     ];
     const [node] = funnelRadialModel(js, now).nodes;
     expect(node.segment).toBe(3); // x_linkedin
-    expect(node.rings).toEqual([0, 1, 4]);
-    expect(node.currentRing).toBe(4); // converted = the core
+    expect(node.rings).toEqual([0, 1, 6]);
+    expect(node.currentRing).toBe(6);
     expect(node.state).toBe('converted');
   });
 

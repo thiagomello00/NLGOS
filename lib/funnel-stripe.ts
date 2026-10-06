@@ -126,7 +126,7 @@ export function mergeStripeWins(journeys: FunnelJourney[], wins: StripeWin[]): F
         id: `${j.id}-stripe-${w.id}`,
         contactId: j.id,
         seq: j.touches.length + i + 1,
-        stage: 'converted' as const,
+        stage: 'signed' as const,
         channel: 'checkout' as const,
         label: winLabel(w),
         source: 'stripe' as const,
@@ -135,7 +135,7 @@ export function mergeStripeWins(journeys: FunnelJourney[], wins: StripeWin[]): F
     ];
     return {
       ...j,
-      status: 'converted' as const,
+      status: 'signed' as const,
       relationship: 'hot' as const, // they paid — no warmer signal exists
       likelihood: 100,
       product: j.product ?? payments.find((w) => w.product)?.product ?? null,
@@ -155,7 +155,7 @@ export function mergeStripeWins(journeys: FunnelJourney[], wins: StripeWin[]): F
           id,
           name: first.name ?? first.email ?? 'Stripe customer',
           venture: first.venture,
-          status: 'converted',
+          status: 'signed',
           product: group.find((w) => w.product)?.product ?? null,
           amountUsd: group.reduce((sum, w) => sum + w.amountUsd, 0),
           relationship: 'hot', // they paid — no warmer signal exists
@@ -172,7 +172,7 @@ export function mergeStripeWins(journeys: FunnelJourney[], wins: StripeWin[]): F
             id: `${id}-t${i + 1}`,
             contactId: id,
             seq: i + 1,
-            stage: 'converted' as const,
+            stage: 'signed' as const,
             channel: 'checkout' as const,
             label: winLabel(w),
             source: 'stripe' as const,
@@ -204,8 +204,8 @@ export async function stripeFunnelWins(
   // FUNNEL_PROVIDER=seed pins the seeded funnel (tests, offline demos).
   if ((env.FUNNEL_PROVIDER ?? 'attio') !== 'attio') return null;
   const accounts: { key: string | undefined; venture: FunnelVenture }[] = [
-    { key: env.STRIPE_SECRET_KEY, venture: 'launchpad-cohort' },
-    { key: env.STRIPE_VANTAGE_KEY, venture: 'vantage' },
+    { key: env.STRIPE_SECRET_KEY, venture: 'nlg' },
+    { key: env.STRIPE_VANTAGE_KEY, venture: 'nlg' },
   ];
   const gte = Math.floor(now.getTime() / 1000) - STRIPE_WIN_DAYS * 86_400;
   const wins: StripeWin[] = [];

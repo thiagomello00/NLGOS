@@ -79,6 +79,6 @@ export const newsletterAgent: RuntimeAgent = {
   name: 'Newsletter Agent',
   description:
     'Reads Beehiiv send performance, builds an honest brief (including when the history is too thin to draw from), and drafts the next issue against the skill file. Drafts only, never schedules or sends.',
-  departmentId: 'dept-marketing-growth',
+  departmentId: 'dept-content',
   run,
 };

@@ -21,28 +21,8 @@ beforeAll(() => {
 });
 
 describe('lead magnet rows', () => {
-  test('every seeded row validates against the schema', () => {
-    const rows = db.leadMagnets.all();
-    expect(rows.length).toBeGreaterThan(0);
-    for (const r of rows) expect(() => LeadMagnetSchema.parse(r)).not.toThrow();
-  });
-
-  test('the flagship stack page is in there, live, with its URL', () => {
-    const stack = db.leadMagnets.all().find((r) => r.id === 'operator-stack');
-    expect(stack).toBeDefined();
-    expect(stack!.status).toBe('live');
-    // the custom subdomain never got its DNS record, so the row must carry a
-            // URL that actually resolves, not a dead one
-            expect(stack!.url).toContain('stack.example.com');
-    expect(stack!.captures).toBe('email');
-    // where the leads actually land, so the list is not a dead directory
-    expect(stack!.destination.toLowerCase()).toContain('newsletter');
-  });
-
-  test('rows sort newest first so the freshest drop leads the list', () => {
-    const rows = db.leadMagnets.all();
-    const dates = rows.map((r) => r.launchedAt);
-    expect([...dates].sort((a, b) => b.localeCompare(a))).toEqual(dates);
+  test('NLG seed does not invent lead magnets', () => {
+    expect(db.leadMagnets.all()).toEqual([]);
   });
 
   test('insert + re-seed is idempotent by id', () => {
@@ -64,24 +44,18 @@ describe('GET /api/lead-magnets', () => {
 });
 
 describe('back-fill on existing databases', () => {
-  test('getDb re-seeds when the lead_magnets table is empty', () => {
-    // the operator's mini + Railway both carry databases created before this table
-    // existed; without a clause here the list would render empty forever.
+  test('empty lead magnets are allowed — getDb does not treat them as an unseeded install', () => {
     const src = read('lib/data.ts');
-    expect(src).toContain('instance.leadMagnets.all().length === 0');
+    expect(src).not.toContain('instance.leadMagnets.all().length === 0');
   });
 });
 
 describe('the Content surface', () => {
-  test('three equal top sections: Lead Magnets, Vantage Intel, My Analytics', () => {
+  test('the top section is the in-OS Lead Magnets index', () => {
     const page = read('app/content/page.tsx');
-    expect(page).toContain('md:grid-cols-3');
     expect(page).toContain('Lead Magnets');
-    expect(page).toContain('Vantage Intel');
-    expect(page).toContain('My Analytics');
-    // Vantage Intel wears the real brand mark, not a lucide glyph
-    expect(page).toContain('mark="/vantage-mark.png"');
-    // Lead Magnets opens the in-OS index
+    expect(page).not.toContain('Vantage Intel');
+    expect(page).not.toContain('intel.example.com');
     expect(page).toContain('href="/content/lead-magnets"');
   });
 

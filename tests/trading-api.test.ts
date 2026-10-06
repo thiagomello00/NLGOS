@@ -10,7 +10,7 @@ import { seedDatabase } from '@/lib/seed';
  * reflects them; the seed leaves /trading alive out of the box.
  */
 
-describe('seedDatabase seeds the trading account', () => {
+describe('seedDatabase does not invent a trading account', () => {
   let db: FounderDb;
   beforeAll(() => {
     db = openDb(':memory:');
@@ -18,12 +18,10 @@ describe('seedDatabase seeds the trading account', () => {
   });
   afterAll(() => db.close());
 
-  test('a snapshot, positions, and activity are present', () => {
-    const snap = db.trading.latestSnapshot();
-    expect(snap).not.toBeNull();
-    expect(snap!.accountValueUsd).toBeGreaterThan(0);
-    expect(db.trading.positions().length).toBeGreaterThan(0);
-    expect(db.trading.activity().length).toBeGreaterThan(0);
+  test('snapshot, positions, and activity stay empty until a broker writes', () => {
+    expect(db.trading.latestSnapshot()).toBeNull();
+    expect(db.trading.positions()).toEqual([]);
+    expect(db.trading.activity()).toEqual([]);
   });
 });
 

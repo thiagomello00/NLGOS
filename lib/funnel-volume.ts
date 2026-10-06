@@ -44,7 +44,7 @@ export function funnelVolume({ journeys, archived, now, days = 30 }: { journeys:
       label: `${HANDOFF[k]} (${next}/${prev})`,
       frac,
       display: prev > 0 ? `${Math.round(frac * 100)}%` : 'no leads',
-      hue: HUES[k],
+      hue: HUES[k % HUES.length],
     };
   });
 

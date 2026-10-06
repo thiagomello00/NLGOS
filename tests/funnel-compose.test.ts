@@ -13,7 +13,7 @@ import type { FunnelJourney } from '@/lib/schemas';
 
 const win = (over: Partial<StripeWin> = {}): StripeWin => ({
   id: 'ch_1',
-  venture: 'launchpad-cohort',
+  venture: 'nlg',
   email: 'buyer@example.com',
   name: 'Cohort Buyer',
   amountUsd: 1497,
@@ -37,7 +37,7 @@ describe('composeFunnelJourneys', () => {
     expect(c.isLive).toBe(true);
     const buyer = c.journeys.find((j) => j.email === 'buyer@example.com');
     expect(buyer).toBeTruthy();
-    expect(buyer!.status).toBe('converted');
+    expect(buyer!.status).toBe('signed');
     expect(buyer!.amountUsd).toBe(1497);
   });
 
@@ -51,10 +51,10 @@ describe('composeFunnelJourneys', () => {
   it('filters journeys to the requested venture', async () => {
     const c = await composeFunnelJourneys(
       new Date('2026-08-11'),
-      'vantage',
-      deps({ stripe: async () => [win({ id: 'ch_aa', venture: 'launchpad-cohort' })] }),
+      'nlg',
+      deps({ stripe: async () => [win({ id: 'ch_aa', venture: 'nlg' })] }),
     );
-    expect(c.journeys.every((j) => j.venture === 'vantage')).toBe(true);
+    expect(c.journeys.every((j) => j.venture === 'nlg')).toBe(true);
   });
 
   it('falls back to seed when nothing is live', async () => {

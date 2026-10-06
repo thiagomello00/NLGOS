@@ -94,7 +94,8 @@ describe('blueprint: the map cannot drift from the system', () => {
     expect(uses('surface-brain', 'store-brain')).toBe(true);
     expect(uses('surface-finances', 'store-ledger')).toBe(true);
     expect(uses('surface-finances', 'store-bank')).toBe(true);
-    expect(uses('surface-trading', 'store-candles')).toBe(true);
+    // /trading stays off the operator nav; the candles store remains as infrastructure.
+    expect(graph.nodes.some((n) => n.id === 'store-candles')).toBe(true);
     expect(uses('surface-brand-deals', 'store-notion-deals')).toBe(true);
     expect(uses('surface-adpilot', 'store-ad-intel')).toBe(true);
   });

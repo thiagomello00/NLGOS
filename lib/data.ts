@@ -31,20 +31,7 @@ export function getDb(): FounderDb {
     // change, which is also what prunes anything that left the seed.
     instance.meta.get('seed_version') !== SEED_VERSION ||
     instance.departments.all().length === 0 ||
-    instance.workflows.all().length === 0 ||
     instance.skills.all().length === 0 ||
-    instance.social.accounts().length === 0 ||
-    instance.emailList.snapshots().length === 0 ||
-    instance.social.dmSnapshots().length === 0 ||
-    instance.social.dmMessages().length === 0 ||
-    instance.leadMagnets.all().length === 0 ||
-    instance.trading.latestSnapshot() === null ||
-    // Without this clause the host — whose DB predates the table — would show
-    // an empty Deliverables section forever, because the guard never fires.
-    instance.proposals.all().length === 0 ||
-    // Same reason for the scheduled jobs: the host's DB predates agent_crons
-    // carrying seeded rows, so without this clause the 9am comms digest would
-    // never exist in production and the cron tick would find nothing due.
     instance.agentCrons.all().length === 0
   ) {
     seedDatabase(instance);

@@ -2,7 +2,6 @@ import { afterEach, describe, expect, test } from 'vitest';
 import { openDb, type FounderDb } from '@/lib/db';
 import { seedDatabase } from '@/lib/seed';
 import { buildKnowledgeGraph, toolSlugOf } from '@/lib/knowledge-graph';
-import { playbookFor } from '@/lib/sop-playbooks';
 import { buildToolWiki } from '@/lib/agent-wiki';
 import { buildWikiIndex } from '@/lib/brain-wiki';
 import { buildBrainDocs } from '@/lib/brain-docs';
@@ -40,13 +39,8 @@ describe('Plaud placement across the OS', () => {
     }
   });
 
-  test('the call-mining SOP ingests Plaud recordings too, and its playbook builds on Plaud', () => {
-    const task = seeded().sopTasks.all().find((t) => t.id === 'sop-sales-calls-data')!;
-    expect(task.summary).toMatch(/Plaud/);
-    expect(task.steps.some((s) => /Plaud/.test(s))).toBe(true);
-    const pb = playbookFor(task);
-    expect(pb.buildsOn).toContain('Plaud');
-    expect(pb.breaksInto).toContain('plaud-ingest');
+  test('call-mining SOP copy is omitted until real NLG SOPs land; Plaud stays on the agents', () => {
+    expect(seeded().sopTasks.all().find((t) => t.id === 'sop-sales-calls-data')).toBeUndefined();
   });
 
   test('the G-Brain knowledge graph grows a Plaud tool node wired to the agents that use it', () => {

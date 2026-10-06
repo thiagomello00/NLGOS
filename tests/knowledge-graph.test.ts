@@ -254,15 +254,25 @@ describe('graph department order (AC1)', () => {
     expect(graphDeptRank('dept-finance')).toBe(graphDeptRank('dept-sales') + 1);
   });
 
-  test('covers all six pillars exactly once', () => {
-    expect(new Set(GRAPH_DEPT_ORDER).size).toBe(6);
-    for (const id of ['dept-sales', 'dept-finance', 'dept-clients', 'dept-marketing-growth', 'dept-tech', 'dept-comms']) {
+  test('covers the NLG departments exactly once', () => {
+    expect(new Set(GRAPH_DEPT_ORDER).size).toBe(9);
+    for (const id of [
+      'dept-leadership',
+      'dept-sales',
+      'dept-client-success',
+      'dept-content',
+      'dept-production',
+      'dept-post-production',
+      'dept-paid-media',
+      'dept-finance',
+      'dept-growth',
+    ]) {
       expect(GRAPH_DEPT_ORDER).toContain(id);
     }
   });
 
   test('unknown departments rank after the known ones', () => {
-    expect(graphDeptRank('dept-mystery')).toBeGreaterThan(graphDeptRank('dept-comms'));
+    expect(graphDeptRank('dept-mystery')).toBeGreaterThan(graphDeptRank('dept-growth'));
   });
 });
 
@@ -272,11 +282,10 @@ describe('department exec titles (the pillar IS the head agent)', () => {
     const { DEPT_EXEC_TITLES } = await import('@/lib/knowledge-graph');
     expect(DEPT_EXEC_TITLES).toMatchObject({
       'dept-sales': 'CRO',
-      'dept-marketing-growth': 'CMO',
-      'dept-tech': 'CTO',
       'dept-finance': 'CFO',
-      'dept-comms': 'CCO',
-      'dept-clients': 'COO',
+      'dept-leadership': 'Lead',
+      'dept-client-success': 'CS',
+      'dept-growth': 'Growth',
     });
   });
 });

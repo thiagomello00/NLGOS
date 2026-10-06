@@ -29,24 +29,38 @@ const opp = (over: Partial<GhlOpportunity>): GhlOpportunity => ({
 });
 
 describe('mapGhlOpportunities', () => {
-  test('maps stage position onto the canonical hubs by pipeline fraction', () => {
-    const { journeys } = mapGhlOpportunities([PIPELINE], [
-      opp({ id: 'o1', pipelineStageId: 's-new' }), // fraction 0
-      opp({ id: 'o2', pipelineStageId: 's-dm' }), // 0.25
-      opp({ id: 'o3', pipelineStageId: 's-vsl' }), // 0.5
-      opp({ id: 'o4', pipelineStageId: 's-show' }), // 1
+  test('maps exact HighLevel stage names onto the NLG pipeline', () => {
+    const pipeline: GhlPipeline = {
+      id: 'pipe-1',
+      name: 'NLG Agency',
+      stages: [
+        { id: 's-new', name: 'New Lead' },
+        { id: 's-sched', name: 'Scheduled Call' },
+        { id: 's-ns', name: 'No Show' },
+        { id: 's-got', name: 'Got in the Call' },
+        { id: 's-prop', name: 'Proposal Sent' },
+        { id: 's-fu', name: 'FU - Interested - HI' },
+        { id: 's-sign', name: 'Signed' },
+        { id: 's-dq', name: 'Disqualified' },
+      ],
+    };
+    const { journeys } = mapGhlOpportunities([pipeline], [
+      opp({ id: 'o1', pipelineId: 'pipe-1', pipelineStageId: 's-new' }),
+      opp({ id: 'o2', pipelineId: 'pipe-1', pipelineStageId: 's-sched' }),
+      opp({ id: 'o3', pipelineId: 'pipe-1', pipelineStageId: 's-fu' }),
+      opp({ id: 'o4', pipelineId: 'pipe-1', pipelineStageId: 's-sign' }),
     ], NOW);
     const byId = Object.fromEntries(journeys.map((j) => [j.id, j.status]));
-    expect(byId['ghl-o1']).toBe('first_touch');
-    expect(byId['ghl-o2']).toBe('engaged');
-    expect(byId['ghl-o3']).toBe('nurtured');
-    expect(byId['ghl-o4']).toBe('opted_in');
+    expect(byId['ghl-o1']).toBe('new_lead');
+    expect(byId['ghl-o2']).toBe('scheduled_call');
+    expect(byId['ghl-o3']).toBe('fu_interested_hi');
+    expect(byId['ghl-o4']).toBe('signed');
   });
 
   test('produces valid journeys: LC venture, ghl source, stall-ready last-touch date', () => {
     const { journeys } = mapGhlOpportunities([PIPELINE], [opp({ id: 'o1', pipelineStageId: 's-dm' })], NOW);
     const j = FunnelJourneySchema.parse(journeys[0]);
-    expect(j.venture).toBe('launchpad-cohort');
+    expect(j.venture).toBe('nlg');
     expect(j.touches.every((t) => t.source === 'ghl')).toBe(true);
     expect(j.touches[0].at).toBe('2026-06-01'); // created
     expect(j.touches.at(-1)?.at).toBe('2026-06-28'); // last stage change → decay clock
@@ -66,16 +80,17 @@ describe('mapGhlOpportunities', () => {
     expect(j.url).toBe('https://app.gohighlevel.com/v2/location/loc_abc/contacts/detail/CUeK123');
   });
 
-  test('won opportunities convert with their value; lost and abandoned are excluded but counted', () => {
+  test('won opportunities pin to Signed; lost and abandoned stay visible as Disqualified', () => {
     const { journeys, excluded } = mapGhlOpportunities([PIPELINE], [
       opp({ id: 'won', status: 'won', monetaryValue: 6800, pipelineStageId: 's-show' }),
       opp({ id: 'lost', status: 'lost' }),
       opp({ id: 'gone', status: 'abandoned' }),
     ], NOW);
-    expect(journeys.map((j) => j.id)).toEqual(['ghl-won']);
-    expect(journeys[0].status).toBe('converted');
-    expect(journeys[0].amountUsd).toBe(6800);
-    expect(excluded).toBe(2);
+    expect(journeys.map((j) => j.id).sort()).toEqual(['ghl-gone', 'ghl-lost', 'ghl-won']);
+    expect(journeys.find((j) => j.id === 'ghl-won')?.status).toBe('signed');
+    expect(journeys.find((j) => j.id === 'ghl-won')?.amountUsd).toBe(6800);
+    expect(journeys.find((j) => j.id === 'ghl-lost')?.status).toBe('disqualified');
+    expect(excluded).toBe(0);
   });
 
   test('unknown pipeline or stage ids are skipped, never fatal', () => {
@@ -87,21 +102,20 @@ describe('mapGhlOpportunities', () => {
     expect(journeys.map((j) => j.id)).toEqual(['ghl-ok']);
   });
 
-  test('nurture-named stages map to the nurtured hub regardless of pipeline position', () => {
+  test('exact HighLevel names win over pipeline position', () => {
     const pipeline: GhlPipeline = {
       id: 'pipe-1',
-      name: 'Main Pipeline',
+      name: 'NLG Agency',
       stages: [
         { id: 's-a', name: 'Webinar Meetings' },
-        { id: 's-b', name: '30 Minute - voice call' },
-        { id: 's-n', name: 'Nurture 2 Weeks>' }, // late position, but semantically nurture
+        { id: 's-fu', name: 'FU - Interested - HI' },
         { id: 's-z', name: 'Student Onboarded' },
       ],
     };
     const { journeys } = mapGhlOpportunities([pipeline], [
-      opp({ id: 'o-n', pipelineId: 'pipe-1', pipelineStageId: 's-n' }),
+      opp({ id: 'o-n', pipelineId: 'pipe-1', pipelineStageId: 's-fu' }),
     ], NOW);
-    expect(journeys[0].status).toBe('nurtured');
+    expect(journeys[0].status).toBe('fu_interested_hi');
   });
 
   test('likelihood grows with pipeline depth and money on the table', () => {

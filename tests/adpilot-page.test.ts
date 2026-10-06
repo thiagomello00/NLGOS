@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, test } from 'vitest';
-import { NAV_OPERATE, DIGIT_VIEWS, NAV_ORDER } from '@/lib/nav';
+import { NAV_OPERATE, NAV_ORDER } from '@/lib/nav';
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8');
 
@@ -41,9 +41,8 @@ describe('/adpilot: present, reachable, honest', () => {
     expect(lib).toContain('not connected');
   });
 
-  test('AdPilot sits at the end of Operate, outside the nine digit shortcuts', () => {
+  test('AdPilot sits at the end of Operate', () => {
     expect(NAV_OPERATE[NAV_OPERATE.length - 1].href).toBe('/adpilot');
-    expect(DIGIT_VIEWS).not.toContain('/adpilot');
     expect(NAV_ORDER).toContain('/adpilot');
   });
 

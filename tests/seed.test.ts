@@ -9,20 +9,30 @@ afterEach(() => {
 });
 
 describe('seedDatabase', () => {
-  test('populates every entity', () => {
+  test('populates core OS entities', () => {
     db = openDb(':memory:');
     seedDatabase(db);
-    expect(db.departments.all().length).toBeGreaterThanOrEqual(5);
+    expect(db.departments.all().length).toBe(9);
     expect(db.agents.all().length).toBeGreaterThanOrEqual(5);
     expect(db.tools.all().length).toBeGreaterThanOrEqual(8);
     expect(db.roadmap.all().length).toBeGreaterThanOrEqual(10);
     expect(db.metrics.all().length).toBeGreaterThanOrEqual(4);
     expect(db.domains.all().length).toBeGreaterThanOrEqual(8);
     expect(db.phases.all().length).toBeGreaterThanOrEqual(3);
-    expect(db.workflows.all().length).toBeGreaterThanOrEqual(2);
-    expect(db.workflows.all().every((w) => w.steps.length >= 3)).toBe(true);
     expect(db.skills.all().length).toBeGreaterThanOrEqual(8);
-    expect(db.agentTasks.all().length).toBeGreaterThanOrEqual(8);
+  });
+
+  test('does not invent company workflows, SOPs, leads, or social metrics', () => {
+    db = openDb(':memory:');
+    seedDatabase(db);
+    expect(db.workflows.all()).toEqual([]);
+    expect(db.sopTasks.all()).toEqual([]);
+    expect(db.people.all()).toEqual([]);
+    expect(db.leadMagnets.all()).toEqual([]);
+    expect(db.funnel.journeys()).toEqual([]);
+    expect(db.social.accounts()).toEqual([]);
+    expect(db.emailList.snapshots()).toEqual([]);
+    expect(db.agentTasks.all().filter((t) => t.id.startsWith('task-seed-'))).toEqual([]);
   });
 
   test('every agent belongs to an existing department', () => {
@@ -44,16 +54,19 @@ describe('seedDatabase', () => {
     }
   });
 
-  test('the six operating pillars, in order', () => {
+  test('the nine NLG Agency departments, in order', () => {
     db = openDb(':memory:');
     seedDatabase(db);
     expect(db.departments.all().map((d) => d.name)).toEqual([
+      'Leadership',
       'Sales',
-      'Marketing/Growth',
-      'TECH',
-      'Finances',
-      'Communications',
-      'Clients',
+      'Client Success',
+      'Content',
+      'Production',
+      'Post Production',
+      'Paid Media',
+      'Finance & Admin',
+      'Growth / NLG Brand',
     ]);
   });
 
@@ -61,7 +74,6 @@ describe('seedDatabase', () => {
     db = openDb(':memory:');
     seedDatabase(db);
     const byId = new Map(db.agents.all().map((a) => [a.id, a.departmentId]));
-    // Sales: the deal / account / CRM lanes
     for (const id of [
       'sales-agent',
       'crm-pulse',
@@ -72,7 +84,6 @@ describe('seedDatabase', () => {
     ]) {
       expect(byId.get(id)).toBe('dept-sales');
     }
-    // Finances: the payment processors moved off Sales
     for (const id of [
       'payments-pulse',
       'stripe-sales',
@@ -82,24 +93,18 @@ describe('seedDatabase', () => {
     ]) {
       expect(byId.get(id)).toBe('dept-finance');
     }
-    expect(db.agents.all().filter((a) => a.departmentId === 'dept-finance').length).toBeGreaterThanOrEqual(5);
-    // Marketing/Growth: the social/content crew
-    for (const id of [
-      'social-agent',
-      'postly-publisher',
-      'adsmith-creative',
-      'reelkit-editor',
-      'renderly-creative',
-      'dmflow-mcp',
-    ]) {
-      expect(byId.get(id)).toBe('dept-marketing-growth');
-    }
-    // TECH: AI head, the G-Brain data crew, and automations
+    expect(byId.get('social-agent')).toBe('dept-growth');
+    expect(byId.get('postly-publisher')).toBe('dept-growth');
+    expect(byId.get('dmflow-mcp')).toBe('dept-growth');
+    expect(byId.get('adsmith-creative')).toBe('dept-paid-media');
+    expect(byId.get('reelkit-editor')).toBe('dept-post-production');
+    expect(byId.get('renderly-creative')).toBe('dept-production');
+    expect(byId.get('newsletter-agent')).toBe('dept-content');
     for (const id of ['conductor', 'data-agent', 'markdown-auditor', 'vector-auditor', 'stack-monitor']) {
-      expect(byId.get(id)).toBe('dept-tech');
+      expect(byId.get(id)).toBe('dept-leadership');
     }
-    for (const id of ['comms-agent', 'gmail-worker', 'whatsapp-worker', 'slack-worker']) {
-      expect(byId.get(id)).toBe('dept-comms');
+    for (const id of ['comms-agent', 'gmail-worker', 'whatsapp-worker', 'slack-worker', 'client-roster']) {
+      expect(byId.get(id)).toBe('dept-client-success');
     }
   });
 
@@ -116,16 +121,13 @@ describe('seedDatabase', () => {
     seedDatabase(db);
     const byId = new Map(db.agents.all().map((a) => [a.id, a]));
 
-    // Comms: the channel workers that feed /comms hang off the comms agent
     for (const worker of ['gmail-worker', 'whatsapp-worker', 'slack-worker']) {
       expect(byId.get(worker)?.parentId).toBe('comms-agent');
       expect(byId.get(worker)?.tier).toBe('worker');
     }
-    // Studio: social media + content creation
     for (const worker of ['postly-publisher', 'adsmith-creative', 'reelkit-editor', 'renderly-creative', 'dmflow-mcp']) {
       expect(byId.get(worker)?.parentId).toBe('social-agent');
     }
-    // Sales: CRM / account lanes hang off the sales instance
     for (const worker of [
       'crm-pulse',
       'launchpad-cohort-sales',
@@ -137,25 +139,23 @@ describe('seedDatabase', () => {
     }
     expect(byId.get('vantage-paykit')?.parentId).toBe('vantage-sales');
     expect(byId.get('vantage-paykit')?.tier).toBe('worker');
-    // Finances: the payment processors now report to Payments Pulse
     for (const worker of ['stripe-sales', 'processor-confirmation', 'paykit-sales', 'flexpay-financing']) {
       expect(byId.get(worker)?.parentId).toBe('payments-pulse');
       expect(byId.get(worker)?.tier).toBe('worker');
     }
-    // Knowledge: the G-Brain analyst and its auditors
     for (const worker of ['markdown-auditor', 'vector-auditor']) {
       expect(byId.get(worker)?.parentId).toBe('data-agent');
     }
-    // Top-level agents are instance slots awaiting Clawline/Claude Code bindings
     expect(byId.get('comms-agent')?.parentId).toBeNull();
     expect(byId.get('comms-agent')?.instance).not.toBe('');
+    expect(byId.get('newsletter-agent')?.parentId).toBeNull();
   });
 
   test('re-seeding removes agents that left the roster', () => {
     db = openDb(':memory:');
     seedDatabase(db);
     db.agents.insert({
-      id: 'ghost', departmentId: 'dept-tech', name: 'Ghost', role: 'r', status: 'active',
+      id: 'ghost', departmentId: 'dept-leadership', name: 'Ghost', role: 'r', status: 'active',
       tier: 'lead', description: '', model: 'm', tools: [], parentId: null, instance: 'builtin',
     });
     seedDatabase(db);
@@ -176,40 +176,27 @@ describe('seedDatabase', () => {
     expect(db.tools.all().length).toBe(counts.tools);
   });
 
-  test('email list reflects the real Beehiiv account, not the retired ~30k demo', () => {
+  test('email list stays empty until a live source writes snapshots', () => {
     db = openDb(':memory:');
     seedDatabase(db);
-    const snaps = db.emailList.snapshots();
-    expect(snaps.length).toBeGreaterThan(0);
-    // Latest count is the seeded newsletter subscriber count.
-    // Bumped deliberately as the list grows.
-    expect(db.emailList.latest()?.subscribers).toBe(1850);
-    // Honest shape: the list only exists from its seeded bulk import — no
-    // pre-import history, and nowhere near the old dummy ~30k ramp.
-    expect(snaps[0].capturedAt >= '2026-05-28').toBe(true);
-    for (const s of snaps) expect(s.subscribers).toBeLessThan(6000);
+    expect(db.emailList.snapshots()).toEqual([]);
+    expect(db.emailList.latest()).toBeNull();
   });
 
-  test('re-seeding reconciles email history: stale dummy dropped, live snapshots kept', () => {
+  test('re-seeding drops stale dummy email history and keeps live snapshots', () => {
     db = openDb(':memory:');
     seedDatabase(db);
-    // an older DB still holding retired ~30k dummy history + a live Beehiiv snapshot
     db.emailList.insertSnapshot({ capturedAt: '2026-03-14', subscribers: 25800, source: 'seed-dummy' });
     db.emailList.insertSnapshot({ capturedAt: '2026-07-07', subscribers: 4830, source: 'beehiiv' });
     seedDatabase(db);
     const snaps = db.emailList.snapshots();
-    // retired dummy history is reconciled away on re-seed...
     expect(snaps.some((s) => s.source === 'seed-dummy')).toBe(false);
-    expect(snaps.some((s) => s.subscribers > 6000)).toBe(false);
-    // ...but a real live-synced snapshot survives
     expect(snaps.find((s) => s.capturedAt === '2026-07-07')?.source).toBe('beehiiv');
   });
 
   test('seeded data passes schema validation end to end', () => {
     db = openDb(':memory:');
     seedDatabase(db);
-    // openDb repos parse rows through Zod on the way out, so a full read
-    // of every table proves the seed data conforms to every schema.
     expect(() => {
       db.departments.all();
       db.agents.all();

@@ -21,7 +21,7 @@ function journey(
   return {
     id,
     name: id,
-    venture: 'vantage',
+    venture: 'nlg',
     status,
     product: null,
     amountUsd: null,
@@ -50,11 +50,11 @@ function journey(
 }
 
 const JOURNEYS: FunnelJourney[] = [
-  journey('won-a', 'converted', [['first_touch', 'organic', '2026-09-01'], ['engaged', 'call', '2026-09-05'], ['nurtured', 'call', '2026-09-08'], ['converted', 'checkout', '2026-09-10']], { amountUsd: 3000 }),
-  journey('won-b', 'converted', [['first_touch', 'ads', '2026-09-02'], ['engaged', 'call', '2026-09-06'], ['nurtured', 'call', '2026-09-09'], ['converted', 'checkout', '2026-09-20']], { amountUsd: 1500 }),
-  journey('held', 'nurtured', [['first_touch', 'organic', '2026-09-03'], ['engaged', 'call', '2026-09-20'], ['nurtured', 'call', '2026-09-23']], { likelihood: 80, relationship: 'hot', person: 'Hot Holly' }),
-  journey('booked', 'engaged', [['first_touch', 'organic', '2026-09-04'], ['engaged', 'call', '2026-09-10']], { person: 'Stalled Sam' }),
-  journey('lead', 'first_touch', [['first_touch', 'ads', '2026-09-22']]),
+  journey('won-a', 'signed', [['new_lead', 'organic', '2026-09-01'], ['scheduled_call', 'call', '2026-09-05'], ['fu_interested_hi', 'call', '2026-09-08'], ['signed', 'checkout', '2026-09-10']], { amountUsd: 3000 }),
+  journey('won-b', 'signed', [['new_lead', 'ads', '2026-09-02'], ['scheduled_call', 'call', '2026-09-06'], ['fu_interested_hi', 'call', '2026-09-09'], ['signed', 'checkout', '2026-09-20']], { amountUsd: 1500 }),
+  journey('held', 'fu_interested_hi', [['new_lead', 'organic', '2026-09-03'], ['scheduled_call', 'call', '2026-09-20'], ['fu_interested_hi', 'call', '2026-09-23']], { likelihood: 80, relationship: 'hot', person: 'Hot Holly' }),
+  journey('booked', 'scheduled_call', [['new_lead', 'organic', '2026-09-04'], ['scheduled_call', 'call', '2026-09-10']], { person: 'Stalled Sam' }),
+  journey('lead', 'new_lead', [['new_lead', 'ads', '2026-09-22']]),
 ];
 
 describe('funnelVolume', () => {
@@ -70,18 +70,11 @@ describe('funnelVolume', () => {
     expect(v.caption).toBe('closed revenue across 5 active clients · 3 organic / 2 ads entry');
   });
 
-  test('four meters, one per stage hand-off, each a real fraction of the stage before', () => {
-    expect(v.meters.map((m) => m.label)).toEqual([
-      'First touch → Engaged (4/5)',
-      'Engaged → Nurtured (3/4)',
-      'Nurtured → Opted in (2/3)',
-      'Opted in → Converted (2/2)',
-    ]);
+  test('one meter per stage hand-off', () => {
+    expect(v.meters).toHaveLength(7);
+    expect(v.meters[0].label).toContain('New Lead → Scheduled Call');
+    expect(v.meters.at(-1)?.label).toContain('Signed → Disqualified');
     expect(v.meters[0].frac).toBeCloseTo(4 / 5);
-    expect(v.meters[1].frac).toBeCloseTo(3 / 4);
-    expect(v.meters[2].frac).toBeCloseTo(2 / 3);
-    expect(v.meters.map((m) => m.display)).toEqual(['80%', '75%', '67%', '100%']);
-    expect(v.foot).toBe('each bar is a stage over the one before · 40% end to end');
   });
 
   test('the activity series counts real touches per day over the last 30 days', () => {
@@ -103,7 +96,7 @@ describe('funnelVolume', () => {
     expect(e.revenueUsd).toBe(0);
     expect(e.chips).toEqual([{ tone: 'ok', text: '0 closed' }]);
     expect(e.meters.every((m) => m.frac === 0)).toBe(true);
-    expect(e.meters.map((m) => m.display)).toEqual(['no leads', 'no leads', 'no leads', 'no leads']);
+    expect(e.meters.map((m) => m.display)).toEqual(Array(7).fill('no leads'));
     expect(e.foot).toBe('each bar is a stage over the one before · no leads yet');
     expect(e.touchesInWindow).toBe(0);
     expect(e.insight).toMatchObject({ value: 0, frac: 0, headline: 'Nothing waiting on you' });

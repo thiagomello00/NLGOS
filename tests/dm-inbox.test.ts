@@ -47,16 +47,10 @@ describe('social.dmMessages', () => {
     expect(db.social.dmMessages('instagram').map((m) => m.id)).toEqual(['ig']);
   });
 
-  test('seed ships a realistic multi-conversation Instagram DM inbox', () => {
+  test('NLG seed does not invent an Instagram DM inbox', () => {
     db = openDb(':memory:');
     seedDatabase(db);
-    const msgs = db.social.dmMessages('instagram');
-    expect(msgs.length).toBeGreaterThan(3);
-    expect(msgs.every((m) => m.platform === 'instagram')).toBe(true);
-    // more than one conversation, and both inbound + outbound present
-    expect(new Set(msgs.map((m) => m.subscriberId)).size).toBeGreaterThan(1);
-    expect(msgs.some((m) => m.direction === 'in')).toBe(true);
-    expect(msgs.some((m) => m.direction === 'out')).toBe(true);
+    expect(db.social.dmMessages('instagram')).toEqual([]);
   });
 });
 

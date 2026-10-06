@@ -37,7 +37,7 @@ export const LIFE_AREAS: LifeArea[] = [
     ],
     agents: ['social-agent', 'postly-publisher', 'adsmith-creative', 'reelkit-editor', 'renderly-creative', 'dmflow-mcp', 'social-pulse'],
     brainFolders: ['media', 'writing', 'ideas'],
-    departmentIds: ['dept-marketing-growth'],
+    departmentIds: ['dept-content', 'dept-production', 'dept-post-production', 'dept-paid-media', 'dept-growth'],
   },
   {
     id: 'sales',
@@ -98,7 +98,7 @@ export const LIFE_AREAS: LifeArea[] = [
     ],
     agents: ['comms-agent', 'gmail-worker', 'whatsapp-worker', 'slack-worker'],
     brainFolders: ['inbox', 'meetings', 'people'],
-    departmentIds: ['dept-comms'],
+    departmentIds: ['dept-client-success'],
   },
   {
     id: 'clients',
@@ -106,14 +106,14 @@ export const LIFE_AREAS: LifeArea[] = [
     color: '#14b8a6',
     detail: 'Every client, onboarded and served.',
     modules: [
-      { id: 'roster', label: 'Roster', detail: 'Who is a client right now, by venture.' },
+      { id: 'roster', label: 'Roster', detail: 'Who is a client right now.' },
       { id: 'onboarding', label: 'Onboarding', detail: 'Closed-won to kickoff without a dropped step.' },
       { id: 'service', label: 'Service', detail: 'Check-in cadence and deliverable tracking.' },
       { id: 'renewals', label: 'Renewals', detail: 'Expansion and renewal timing.' },
     ],
     agents: ['client-roster', 'client-onboarding', 'client-success'],
     brainFolders: ['people', 'companies'],
-    departmentIds: ['dept-clients'],
+    departmentIds: ['dept-client-success'],
   },
   {
     id: 'knowledge',
@@ -128,7 +128,7 @@ export const LIFE_AREAS: LifeArea[] = [
     ],
     agents: ['data-agent', 'markdown-auditor', 'vector-auditor', 'notion-sync', 'brain-librarian'],
     brainFolders: ['concepts', 'prompts', 'sources', 'archive'],
-    departmentIds: ['dept-tech'],
+    departmentIds: ['dept-leadership'],
   },
   {
     id: 'operations',
@@ -145,7 +145,7 @@ export const LIFE_AREAS: LifeArea[] = [
     // first match); operations still owns the conductor + stack agents.
     agents: ['conductor', 'stack-monitor'],
     brainFolders: ['org', 'projects', 'hiring'],
-    departmentIds: ['dept-tech'],
+    departmentIds: ['dept-leadership'],
   },
 ];
 

@@ -49,15 +49,15 @@ describe('icpScore', () => {
 
 describe('mapAttioDeals', () => {
   test('maps every pipeline stage onto a canonical hub', () => {
-    expect(ATTIO_STAGE_MAP['New Lead']).toBe('first_touch');
-    expect(ATTIO_STAGE_MAP['Contacted']).toBe('engaged');
-    expect(ATTIO_STAGE_MAP['Nurture']).toBe('nurtured');
-    expect(ATTIO_STAGE_MAP['Discovery']).toBe('opted_in');
-    expect(ATTIO_STAGE_MAP['Technical Scoping']).toBe('opted_in');
-    expect(ATTIO_STAGE_MAP['Generating Proposal']).toBe('opted_in');
-    expect(ATTIO_STAGE_MAP['Proposal Sent']).toBe('opted_in');
-    expect(ATTIO_STAGE_MAP['Onboarding']).toBe('converted');
-    expect(ATTIO_STAGE_MAP['Closed Won']).toBe('converted');
+    expect(ATTIO_STAGE_MAP['New Lead']).toBe('new_lead');
+    expect(ATTIO_STAGE_MAP['Contacted']).toBe('scheduled_call');
+    expect(ATTIO_STAGE_MAP['Nurture']).toBe('fu_interested_hi');
+    expect(ATTIO_STAGE_MAP['Discovery']).toBe('got_in_the_call');
+    expect(ATTIO_STAGE_MAP['Technical Scoping']).toBe('got_in_the_call');
+    expect(ATTIO_STAGE_MAP['Generating Proposal']).toBe('proposal_sent');
+    expect(ATTIO_STAGE_MAP['Proposal Sent']).toBe('proposal_sent');
+    expect(ATTIO_STAGE_MAP['Onboarding']).toBe('signed');
+    expect(ATTIO_STAGE_MAP['Closed Won']).toBe('signed');
   });
 
   test('maps a deal to a valid journey: touches carry created + stage-since dates', () => {
@@ -66,10 +66,10 @@ describe('mapAttioDeals', () => {
     ], NOW);
     expect(journeys).toHaveLength(1);
     const j = FunnelJourneySchema.parse(journeys[0]);
-    expect(j.status).toBe('engaged');
-    expect(j.touches[0].stage).toBe('first_touch');
+    expect(j.status).toBe('scheduled_call');
+    expect(j.touches[0].stage).toBe('new_lead');
     expect(j.touches[0].at).toBe('2026-04-09');
-    expect(j.touches.at(-1)?.stage).toBe('engaged');
+    expect(j.touches.at(-1)?.stage).toBe('scheduled_call');
     expect(j.touches.at(-1)?.at).toBe('2026-06-05'); // journeyMeta stall reads this
     expect(j.touches.every((t) => t.source === 'attio')).toBe(true);
     expect(j.url).toContain('app.attio.com');
@@ -81,7 +81,7 @@ describe('mapAttioDeals', () => {
       rawDeal({ id: 'rec-c', name: 'Bare Lead', stage: 'New Lead' }),
     ], NOW);
     const won = journeys.find((j) => j.id === 'attio-rec-w');
-    expect(won?.status).toBe('converted');
+    expect(won?.status).toBe('signed');
     expect(won?.amountUsd).toBe(15000);
     expect(won?.relationship).toBe('hot'); // score 100
     const bare = journeys.find((j) => j.id === 'attio-rec-c');
@@ -104,17 +104,17 @@ describe('mapAttioDeals', () => {
 });
 
 describe('classifyVenture', () => {
-  test('person-name deals read as Launchpad Cohort mentorship leads', () => {
-    expect(classifyVenture('Riley Monroe')).toBe('launchpad-cohort');
-    expect(classifyVenture('Tayla Nguyen')).toBe('launchpad-cohort');
-    expect(classifyVenture('CASEY EXAMPLE')).toBe('launchpad-cohort');
+  test('person-name deals classify as the single NLG Agency pipeline', () => {
+    expect(classifyVenture('Riley Monroe')).toBe('nlg');
+    expect(classifyVenture('Tayla Nguyen')).toBe('nlg');
+    expect(classifyVenture('CASEY EXAMPLE')).toBe('nlg');
   });
 
-  test('company-flavored deals read as Vantage client builds', () => {
-    expect(classifyVenture('NovaTech Solutions')).toBe('vantage');
-    expect(classifyVenture('Harbor Dental')).toBe('vantage');
-    expect(classifyVenture('Lin & Co Accounting')).toBe('vantage');
-    expect(classifyVenture('Fields Roofing LLC')).toBe('vantage');
+  test('company-flavored deals classify as the same NLG Agency pipeline', () => {
+    expect(classifyVenture('NovaTech Solutions')).toBe('nlg');
+    expect(classifyVenture('Harbor Dental')).toBe('nlg');
+    expect(classifyVenture('Lin & Co Accounting')).toBe('nlg');
+    expect(classifyVenture('Fields Roofing LLC')).toBe('nlg');
   });
 
   test('mapAttioDeals stamps the heuristic venture on every journey', () => {
@@ -122,8 +122,8 @@ describe('classifyVenture', () => {
       rawDeal({ id: 'rec-p', name: 'Riley Monroe', stage: 'Contacted' }),
       rawDeal({ id: 'rec-c', name: 'NovaTech Solutions', stage: 'Contacted' }),
     ], NOW);
-    expect(journeys.find((j) => j.id === 'attio-rec-p')?.venture).toBe('launchpad-cohort');
-    expect(journeys.find((j) => j.id === 'attio-rec-c')?.venture).toBe('vantage');
+    expect(journeys.find((j) => j.id === 'attio-rec-p')?.venture).toBe('nlg');
+    expect(journeys.find((j) => j.id === 'attio-rec-c')?.venture).toBe('nlg');
   });
 });
 

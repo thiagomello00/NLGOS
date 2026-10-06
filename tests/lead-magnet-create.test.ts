@@ -52,11 +52,9 @@ describe('lead magnets created in the OS', () => {
     expect(row.origin).toBe('os');
   });
 
-  it('seeded rows are marked origin seed', () => {
+  it('NLG seed does not invent lead magnets', () => {
     seedDatabase(db);
-    const seeded = db.leadMagnets.all();
-    expect(seeded.length).toBeGreaterThan(0);
-    expect(seeded.every((r) => r.origin === 'seed')).toBe(true);
+    expect(db.leadMagnets.all()).toEqual([]);
   });
 
   it('SURVIVES a re-seed — the seed may only prune its own rows', () => {

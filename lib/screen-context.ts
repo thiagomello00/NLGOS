@@ -8,7 +8,7 @@
  */
 import { NAV_AGENTS, NAV_INTELLIGENCE, NAV_LIBRARY, NAV_OPERATE, NAV_SYSTEM } from '@/lib/nav';
 import { getDb } from '@/lib/data';
-import { funnelSummary, journeyMeta, splitFunnelJourneys, FUNNEL_STAGES } from '@/lib/funnel';
+import { funnelSummary, journeyMeta, splitFunnelJourneys, FUNNEL_STAGES, isWonStage } from '@/lib/funnel';
 import { attioFunnelJourneys } from '@/lib/funnel-live';
 import { ghlFunnelJourneys } from '@/lib/funnel-ghl';
 
@@ -53,9 +53,9 @@ async function funnelContext(): Promise<string> {
   const { active, archived } = splitFunnelJourneys(all, now);
   const summary = funnelSummary(active);
   const metas = active.map((j) => ({ j, meta: journeyMeta(j, now) }));
-  const decaying = metas.filter(({ j, meta }) => j.status !== 'converted' && meta.daysSinceLastTouch > 21).length;
+  const decaying = metas.filter(({ j, meta }) => !isWonStage(j.status) && meta.daysSinceLastTouch > 21).length;
   const reddest = metas
-    .filter(({ j }) => j.status !== 'converted')
+    .filter(({ j }) => !isWonStage(j.status))
     .sort((a, b) => b.meta.daysSinceLastTouch - a.meta.daysSinceLastTouch)
     .slice(0, 5)
     .map(({ j, meta }) => ({ name: j.name, days: meta.daysSinceLastTouch }));
@@ -72,7 +72,7 @@ async function funnelContext(): Promise<string> {
         ]
           .filter(Boolean)
           .join(' + ') + ' (live)'
-      : 'seeded demo data';
+      : 'empty until HighLevel is connected';
   return describeFunnelContext({
     clients: summary.clients,
     converted: summary.converted,

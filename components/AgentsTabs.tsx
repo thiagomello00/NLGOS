@@ -45,7 +45,7 @@ export function AgentsTabs({
   boardUrl = null,
   children,
 }: {
-  hermesUrl: string;
+  hermesUrl: string | null;
   boardUrl?: string | null;
   children: React.ReactNode;
 }) {
@@ -135,13 +135,13 @@ export function AgentsTabs({
                 </>
               ),
             },
-            { id: 'hermes', label: 'Hermes' },
+            ...(hermesUrl ? [{ id: 'hermes' as const, label: 'Hermes' }] : []),
           ]}
           value={tab}
           onChange={switchTo}
           tabWidth={150}
         />
-        {tab === 'hermes' && (
+        {tab === 'hermes' && hermesUrl && (
           <a
             href={hermesUrl}
             target="_blank"
@@ -195,7 +195,7 @@ export function AgentsTabs({
       />
 
       {/* Hermes dashboard — lazy first mount, then kept alive */}
-      {visited && (
+      {visited && hermesUrl && (
         <div className={tab === 'hermes' ? '' : 'hidden'}>
           <iframe
             src={hermesUrl}

@@ -16,12 +16,15 @@ export type KGNodeKind = 'self' | 'team' | 'task' | 'employee' | 'person' | 'too
 
 /** Executive title per department — the pillar node IS the department-head agent. */
 export const DEPT_EXEC_TITLES: Record<string, string> = {
+  'dept-leadership': 'Lead',
   'dept-sales': 'CRO',
-  'dept-marketing-growth': 'CMO',
-  'dept-tech': 'CTO',
+  'dept-client-success': 'CS',
+  'dept-content': 'Content',
+  'dept-production': 'Prod',
+  'dept-post-production': 'Post',
+  'dept-paid-media': 'Paid',
   'dept-finance': 'CFO',
-  'dept-comms': 'CCO',
-  'dept-clients': 'COO',
+  'dept-growth': 'Growth',
 };
 
 export type KGNode = {
@@ -51,12 +54,15 @@ export const SELF_ID = 'self';
  * immediately next to Sales so the revenue + payment-processor story sits together.
  */
 export const GRAPH_DEPT_ORDER = [
+  'dept-leadership',
   'dept-sales',
   'dept-finance',
-  'dept-clients',
-  'dept-marketing-growth',
-  'dept-tech',
-  'dept-comms',
+  'dept-client-success',
+  'dept-content',
+  'dept-production',
+  'dept-post-production',
+  'dept-paid-media',
+  'dept-growth',
 ] as const;
 
 /** Rank a department id for graph layout; unknown ids sort after the known five. */

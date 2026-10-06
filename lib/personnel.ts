@@ -1,14 +1,11 @@
 /**
- * Human personnel that run departments. Panel-only data (NOT graph nodes — those
- * were intentionally kept out of the force graph). Add a person as that part of
- * the org gets a real human lead.
+ * Human personnel that run departments. Panel-only data (NOT graph nodes).
+ * Co-founders live on the org chart, not as department heads. Add a person
+ * here only when a real human lead is hired into that department.
  */
 export type Personnel = { id: string; name: string; role: string; departmentId: string };
 
-export const DEPARTMENT_HEADS: Record<string, { name: string; role: string }> = {
-  'dept-sales': { name: 'Marco', role: 'Head of Sales' },
-  'dept-marketing-growth': { name: 'Nadia', role: 'Head of Growth & Marketing' },
-};
+export const DEPARTMENT_HEADS: Record<string, { name: string; role: string }> = {};
 
 export function headForDepartment(departmentId: string): Personnel | null {
   const h = DEPARTMENT_HEADS[departmentId];

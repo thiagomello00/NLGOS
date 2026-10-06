@@ -8,7 +8,6 @@ function contextFromSeed(): LensContext {
   const db: FounderDb = openDb(':memory:');
   seedDatabase(db);
   const graph = buildKnowledgeGraph(db.agents.all(), db.departments.all(), db.people.all(), db.sopTasks.all());
-  // dept resolver mirroring the component's teamForFocus: worker → its dept
   const deptOf = new Map<string, string>();
   for (const a of db.agents.all()) deptOf.set(`emp:${a.id}`, `team:${a.departmentId}`);
   for (const p of db.people.all()) deptOf.set(`person:${p.id}`, `team:${p.departmentId}`);
@@ -17,24 +16,23 @@ function contextFromSeed(): LensContext {
 
 const ctx = contextFromSeed();
 
-describe('graph lenses — Alex taxonomy (2026-07-12)', () => {
+describe('graph lenses', () => {
   test('the requested categories all exist', () => {
     expect(ENTITY_LENSES.map((l) => l.label)).toEqual([
       'All people', 'Sub-agents', 'Tools', 'Workflows', 'SOPs', 'Projects', 'Teams', 'Departments',
     ]);
     expect(FUNCTION_LENSES.map((l) => l.label)).toContain('Core');
     expect(FUNCTION_LENSES.map((l) => l.label)).toContain('Enabling');
-    expect(FUNCTION_LENSES.map((l) => l.label)).toContain('Vantage team');
-    expect(FUNCTION_LENSES.map((l) => l.label)).toContain('Launchpad Cohort team');
+    expect(FUNCTION_LENSES.map((l) => l.label)).toContain('NLG Agency');
     expect(ACTION_LENSES).toHaveLength(11);
     expect(new Set(ALL_LENSES.map((l) => l.id)).size).toBe(ALL_LENSES.length);
   });
 
   test('entity lenses match by node kind against the real seeded graph', () => {
-    expect(lensNodeSet('ent-people', ctx).size).toBe(5); // seeded roster
-    expect(lensNodeSet('ent-subagents', ctx).size).toBe(32); // -notion-sync retired, +brand-deal and newsletter agents
-    expect(lensNodeSet('ent-departments', ctx).size).toBe(6);
-    expect(lensNodeSet('ent-sops', ctx).size).toBeGreaterThan(20);
+    expect(lensNodeSet('ent-people', ctx).size).toBe(0);
+    expect(lensNodeSet('ent-subagents', ctx).size).toBe(32);
+    expect(lensNodeSet('ent-departments', ctx).size).toBe(9);
+    expect(lensNodeSet('ent-sops', ctx).size).toBe(0);
     expect(lensNodeSet('ent-tools', ctx).size).toBeGreaterThan(20);
   });
 
@@ -47,19 +45,16 @@ describe('graph lenses — Alex taxonomy (2026-07-12)', () => {
     const core = lensNodeSet('fn-core', ctx);
     const enabling = lensNodeSet('fn-enabling', ctx);
     expect(core.has('team:dept-sales')).toBe(true);
-    expect(enabling.has('team:dept-tech')).toBe(true);
-    // a node is never both core and enabling
+    expect(enabling.has('team:dept-leadership')).toBe(true);
     for (const id of core) expect(enabling.has(id), id).toBe(false);
-    // sectors include their workers, not just the gateways
     expect(core.has('emp:sales-agent')).toBe(true);
   });
 
-  test('venture team lenses light their rosters', () => {
-    const van = lensNodeSet('fn-vantage', ctx);
-    expect(van.has('emp:vantage-sales')).toBe(true);
-    expect(van.has('emp:vantage-paykit')).toBe(true);
-    const lc = lensNodeSet('fn-launchpad-cohort', ctx);
-    expect(lc.has('emp:launchpad-cohort-sales')).toBe(true);
+  test('NLG team lens lights sales-lane agents', () => {
+    const nlg = lensNodeSet('fn-nlg', ctx);
+    expect(nlg.has('emp:vantage-sales')).toBe(true);
+    expect(nlg.has('emp:vantage-paykit')).toBe(true);
+    expect(nlg.has('emp:launchpad-cohort-sales')).toBe(true);
   });
 
   test('every action lens resolves to real seeded agents', () => {

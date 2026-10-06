@@ -23,7 +23,6 @@ import {
   LayoutGrid,
   Layers,
   Stethoscope,
-  CandlestickChart,
   MessagesSquare,
   Gauge,
   Crosshair,
@@ -41,8 +40,6 @@ export const NAV_OPERATE: NavItem[] = [
   { href: '/content', label: 'Content', icon: Clapperboard },
   { href: '/brand-deals', label: 'Brand Deals', icon: Handshake },
   { href: '/finances', label: 'Finances', icon: Wallet },
-  { href: '/trading', label: 'Trading', icon: CandlestickChart },
-  // Slab import: last in Operate on purpose, outside the nine digit shortcuts.
   { href: '/adpilot', label: 'AdPilot', icon: Crosshair },
 ];
 

@@ -80,6 +80,6 @@ export const brandDealAgent: RuntimeAgent = {
   name: 'Brand Deal Agent',
   description:
     'Negotiates as Vera, the operator\'s brand deal manager. Ranks what needs answering today (overdue work, unpaid invoices, deadlines inside a week, follow-ups due, negotiations with no number) and drafts each message. A tested contact governor decides whether a thread may be touched at all. Drafts only, never sends.',
-  departmentId: 'dept-marketing-growth',
+  departmentId: 'dept-growth',
   run,
 };

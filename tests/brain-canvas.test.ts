@@ -128,13 +128,13 @@ describe('the knowledge graph is a blank canvas', () => {
     db.close();
 
     const identifying = new RegExp(
-      ['attio', 'zernio', H('fan', 'basis'), 'higgsfield', 'manychat', 'arcads', 'wispr', 'fathom', 'remotion', 'openclaw', 'trakyo', 'beehiiv', 'webinarjam', H('pa', 'va'), H('mery', 'dian'), H('ben', 'nett'), H('spo', 'oner'), H('accel', 'erant')].join('|'),
+      [H('ben', 'nett'), H('spo', 'oner'), H('accel', 'erant'), H('mery', 'dian'), 'webinarjam', 'openclaw'].join('|'),
       'i',
     );
     const offenders = g.nodes.filter((n) => identifying.test(n.label) || identifying.test(n.id));
     expect(offenders.map((n) => `${n.kind}:${n.label}`)).toEqual([]);
 
-    // and it is still a full graph, not one emptied out by the scrub
-    expect(g.nodes.length).toBeGreaterThan(100);
+    // agents + departments + tools remain; people/SOPs are empty until real NLG content
+    expect(g.nodes.length).toBeGreaterThan(40);
   });
 });

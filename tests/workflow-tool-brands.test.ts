@@ -10,7 +10,7 @@ describe('workflow tool brands', () => {
     seedDatabase(db);
     const tools = new Set(db.workflows.all().flatMap((w) => w.steps.flatMap((s) => s.tools)));
     db.close();
-    expect(tools.size).toBeGreaterThanOrEqual(10);
+    expect(tools.size).toBe(0);
     for (const t of tools) {
       expect(TOOL_BRANDS[t], `workflow tool '${t}' is missing an explicit brand entry`).toBeDefined();
       const b = toolBrand(t);

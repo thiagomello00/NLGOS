@@ -33,8 +33,7 @@ export const ENTITY_LENSES: Lens[] = [
 export const FUNCTION_LENSES: Lens[] = [
   { id: 'fn-core', group: 'function', label: 'Core' },
   { id: 'fn-enabling', group: 'function', label: 'Enabling' },
-  { id: 'fn-vantage', group: 'function', label: 'Vantage team' },
-  { id: 'fn-launchpad-cohort', group: 'function', label: 'Launchpad Cohort team' },
+  { id: 'fn-nlg', group: 'function', label: 'NLG Agency' },
 ];
 
 export const ACTION_LENSES: Lens[] = [
@@ -54,19 +53,26 @@ export const ACTION_LENSES: Lens[] = [
 export const ALL_LENSES: Lens[] = [...ENTITY_LENSES, ...FUNCTION_LENSES, ...ACTION_LENSES];
 
 /** Revenue-driving pillars vs the ones that keep the machine running. */
-const CORE_DEPTS = new Set(['team:dept-sales', 'team:dept-marketing-growth', 'team:dept-clients']);
-const ENABLING_DEPTS = new Set(['team:dept-tech', 'team:dept-finance', 'team:dept-comms']);
+const CORE_DEPTS = new Set([
+  'team:dept-sales',
+  'team:dept-client-success',
+  'team:dept-content',
+  'team:dept-production',
+  'team:dept-post-production',
+  'team:dept-paid-media',
+  'team:dept-growth',
+]);
+const ENABLING_DEPTS = new Set(['team:dept-leadership', 'team:dept-finance']);
 
-/** Venture team rosters — seeded agent ids (graph nodes are `emp:<id>`). */
+/** Agency team rosters — seeded agent ids (graph nodes are `emp:<id>`). */
 const VENTURE_TEAMS: Record<string, string[]> = {
-  'fn-vantage': ['vantage-sales', 'vantage-paykit', 'paykit-sales'],
-  'fn-launchpad-cohort': ['launchpad-cohort-sales'],
+  'fn-nlg': ['sales-agent', 'crm-pulse', 'vantage-sales', 'vantage-paykit', 'launchpad-cohort-sales', 'paykit-sales'],
 };
 
 /** What each action actually runs on — seeded agent ids, honest best-fit. */
 const ACTION_AGENTS: Record<string, string[]> = {
   'act-ad-creation': ['adsmith-creative', 'renderly-creative', 'reelkit-editor'],
-  'act-lead-generation': ['sales-agent', 'launchpad-cohort-sales', 'dmflow-mcp', 'vantage-sales'],
+  'act-lead-generation': ['sales-agent', 'crm-pulse', 'dmflow-mcp', 'vantage-sales'],
   'act-content-repurposing': ['reelkit-editor', 'postly-publisher'],
   'act-content-ideation': ['social-agent', 'data-agent'],
   'act-content-scripts': ['social-agent', 'adsmith-creative'],
@@ -107,7 +113,7 @@ export function lensNodeSet(lensId: string, ctx: LensContext): Set<string> {
       byKind('team');
       break;
     case 'ent-teams': {
-      const members = idSet([...VENTURE_TEAMS['fn-vantage'], ...VENTURE_TEAMS['fn-launchpad-cohort']]);
+      const members = idSet(VENTURE_TEAMS['fn-nlg'] ?? []);
       for (const n of ctx.nodes) if (members.has(n.id)) out.add(n.id);
       break;
     }
@@ -123,8 +129,7 @@ export function lensNodeSet(lensId: string, ctx: LensContext): Set<string> {
       }
       break;
     }
-    case 'fn-vantage':
-    case 'fn-launchpad-cohort': {
+    case 'fn-nlg': {
       const members = idSet(VENTURE_TEAMS[lensId]);
       for (const n of ctx.nodes) if (members.has(n.id)) out.add(n.id);
       break;

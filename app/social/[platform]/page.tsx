@@ -4,7 +4,7 @@ import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { getDb } from '@/lib/data';
 import { PLATFORM_LABELS, platformDetail, syncFromZernioConfig } from '@/lib/social';
 import { platformVolume } from '@/lib/social-volume';
-import type { SocialPlatform } from '@/lib/schemas';
+import { SocialPlatformSchema } from '@/lib/schemas';
 import { formatFollowers, formatPct, GrowthBadge } from '@/components/SocialStats';
 import { FollowerBarChart } from '@/components/FollowerBarChart';
 import { Slab, SlabTitle, SlabCard, BigStat, MeterStack, InsightCard, PILL, PILL_ACCENT } from '@/components/slab';
@@ -21,10 +21,31 @@ const WINDOW_DAYS = 30;
  * snapshots and growth windows.
  */
 export default function SocialPlatformPage({ params }: { params: { platform: string } }) {
+  const parsed = SocialPlatformSchema.safeParse(params.platform);
+  if (!parsed.success) notFound();
   const db = getDb();
   syncFromZernioConfig(db);
-  const detail = platformDetail(db, params.platform as SocialPlatform);
-  if (!detail) notFound();
+  const detail = platformDetail(db, parsed.data);
+  if (!detail) {
+    const label = PLATFORM_LABELS[parsed.data];
+    return (
+      <Slab>
+        <SlabTitle
+          eyebrow="audience"
+          title={label}
+          meta="no connected account yet"
+          right={
+            <Link href="/social" className={PILL}>
+              <ArrowLeft className="h-3.5 w-3.5" /> All platforms
+            </Link>
+          }
+        />
+        <div className="border-t border-os-border px-6 py-5 font-mono text-[12px] text-os-dim">
+            {label} will appear here when a real account is connected. Nothing is invented in the meantime.
+        </div>
+      </Slab>
+    );
+  }
 
   const { account, followers, growth, snapshots } = detail;
   const label = PLATFORM_LABELS[account.platform];

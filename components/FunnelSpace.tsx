@@ -26,12 +26,14 @@ const CY = H / 2 - 14; // spine sits slightly above center; labels live below
 const HUB_X0 = 100;
 const HUB_GAP = (W - 200) / (FUNNEL_STAGES.length - 1);
 const hubX = (i: number) => HUB_X0 + i * HUB_GAP;
-const hubR = (i: number) => (i === FUNNEL_STAGES.length - 1 ? 34 : 24);
+const SIGNED_HUB = FUNNEL_STAGES.findIndex((s) => s.id === 'signed');
+const hubR = (i: number) => (i === SIGNED_HUB ? 34 : 24);
 
 /** One hue per stage cluster — the reference is an Obsidian-style graph. */
 const SEGMENT_COLOR = ['var(--funnel-s0)', 'var(--funnel-s1)', 'var(--funnel-s2)', 'var(--funnel-s3)', 'var(--funnel-s4)'];
 
-const nodeColor = (n: FunnelSpaceNode) => decayedColor(SEGMENT_COLOR[n.currentHub], n.decay, n.state === 'converted');
+const nodeColor = (n: FunnelSpaceNode) =>
+  decayedColor(SEGMENT_COLOR[n.currentHub % SEGMENT_COLOR.length], n.decay, n.state === 'converted');
 const nodeOpacity = (n: FunnelSpaceNode) => decayedOpacity(n.decay);
 
 const ENTER_DELAY = 500; // ms before the first node departs

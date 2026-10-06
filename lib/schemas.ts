@@ -561,7 +561,7 @@ export type LeadMagnetStatus = z.infer<typeof LeadMagnetStatusSchema>;
 // The generator deploys these to Vercel and leaves the source on the operator's
 // laptop. The OS runs on the host, so the URL is the durable thing;
 // the row lives in the DB rather than being scanned off a disk that is not there.
-export const ProposalBrandSchema = z.enum(['vantage', 'launchpad-cohort']);
+export const ProposalBrandSchema = z.enum(['nlg']);
 export const ProposalStatusSchema = z.enum(['draft', 'sent', 'won', 'lost']);
 export const ProposalSchema = z.object({
   id: z.string().min(1),
@@ -742,8 +742,17 @@ export type WisprNote = z.infer<typeof WisprNoteSchema>;
 
 // ── Funnel — client journeys from first touch to conversion ─────────────────
 // Canonical stages; `nurtured` is optional so a journey renders as 4–5 touches.
-export const FunnelStageSchema = z.enum(['first_touch', 'engaged', 'nurtured', 'opted_in', 'converted']);
-export const FunnelVentureSchema = z.enum(['vantage', 'launchpad-cohort']);
+export const FunnelStageSchema = z.enum([
+  'new_lead',
+  'scheduled_call',
+  'no_show',
+  'got_in_the_call',
+  'proposal_sent',
+  'fu_interested_hi',
+  'signed',
+  'disqualified',
+]);
+export const FunnelVentureSchema = z.enum(['nlg']);
 export const FunnelChannelSchema = z.enum(['organic', 'ads', 'dm', 'email', 'webinar', 'call', 'checkout', 'crm']);
 // Where each touch comes from: Trakyo (organic attribution), Meta Ads MCP
 // (paid), Attio (live CRM pipeline), Stripe (settled payment wins), manual

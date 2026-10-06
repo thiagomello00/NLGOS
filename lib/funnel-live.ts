@@ -54,28 +54,20 @@ export type AttioContacts = {
 
 /** the operator's 10 Attio stages → the 5 canonical hubs. Closed Lost leaves the funnel. */
 export const ATTIO_STAGE_MAP: Record<string, FunnelStage> = {
-  'New Lead': 'first_touch',
-  Contacted: 'engaged',
-  Nurture: 'nurtured',
-  Discovery: 'opted_in',
-  'Technical Scoping': 'opted_in',
-  'Generating Proposal': 'opted_in',
-  'Proposal Sent': 'opted_in',
-  Onboarding: 'converted',
-  'Closed Won': 'converted',
+  'New Lead': 'new_lead',
+  Contacted: 'scheduled_call',
+  Nurture: 'fu_interested_hi',
+  Discovery: 'got_in_the_call',
+  'Technical Scoping': 'got_in_the_call',
+  'Generating Proposal': 'proposal_sent',
+  'Proposal Sent': 'proposal_sent',
+  Onboarding: 'signed',
+  'Closed Won': 'signed',
 };
 
-/**
- * Venture heuristic for live deals (they carry no venture attribute yet):
- * company-flavored names read as Vantage client builds, bare person names as
- * Launchpad Cohort mentorship leads. Legible and wrong-at-the-edges by
- * design — add a venture attribute in Attio for the exact split.
- */
-const COMPANY_HINTS =
-  /\b(llc|inc|ltd|co|corp|company|solutions?|group|agency|tech|labs?|media|studio|consult\w*|clinic|dental|legal|law|realty|roofing|fitness|accounting|capital|ventures?|partners?|systems?|services?)\b|&/i;
-
-export function classifyVenture(dealName: string): 'vantage' | 'launchpad-cohort' {
-  return COMPANY_HINTS.test(dealName) ? 'vantage' : 'launchpad-cohort';
+/** Single NLG Agency pipeline — Attio deals do not split by venture. */
+export function classifyVenture(_dealName: string): 'nlg' {
+  return 'nlg';
 }
 
 /**
@@ -122,7 +114,7 @@ export function mapAttioDeals(
     const hubIdx = FUNNEL_STAGES.findIndex((s) => s.id === canonical);
     const score = icpScore(deal);
     const amount = deal.values.value?.[0]?.currency_value ?? 0;
-    const converted = canonical === 'converted';
+    const converted = canonical === 'signed';
 
     // Synthesize the transit: one touch per hub travelled, created_at at the
     // start, the real stage-entry date at the end (journeyMeta reads the last

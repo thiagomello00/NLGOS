@@ -76,7 +76,7 @@ export default async function AgentsPage() {
       <SlabCard i={6} className="mt-6 p-5">
         <div className="flex flex-col xl:h-[calc(100dvh-12rem)]">
           <AgentsTabs
-            hermesUrl={process.env.HERMES_DASH_URL ?? 'https://os.example.internal:9000'}
+            hermesUrl={process.env.HERMES_DASH_URL ?? null}
             boardUrl={boardUrl}
           >
             {/* Board left, Conductor rail right, both full height. On narrow

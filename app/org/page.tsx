@@ -119,8 +119,8 @@ export default async function OrgChartPage({ searchParams }: { searchParams?: { 
         </Rise>
       )}
 
-      {/* Venture switcher: Vantage / Launchpad Cohort / Personal Brand — one
-          click swaps which crew lights up below. All data stays shared. */}
+      {/* Single-company lens. Hidden while NLG is the only venture. */}
+      {VENTURES.length > 1 && (
       <Rise i={2} className="mb-3 flex flex-wrap items-center gap-2">
         <Link
           href="/org"
@@ -148,6 +148,7 @@ export default async function OrgChartPage({ searchParams }: { searchParams?: { 
         })}
         {venture && <span className="text-[11px] text-os-dim">{venture.kind} · {venture.detail}</span>}
       </Rise>
+      )}
 
       {venture && (
         <Rise
@@ -183,11 +184,20 @@ export default async function OrgChartPage({ searchParams }: { searchParams?: { 
         ))}
       </Rise>
 
-      {/* Operator */}
+      {/* Co-founders — equal, neither reports to the other */}
       <Rise i={5} className="flex flex-col items-center">
-        <Users className="h-7 w-7 text-os-text" />
-        <div className="mt-1 text-base font-bold tracking-wide">Thiago</div>
-        <div className="text-[10px] uppercase tracking-[0.3em] text-os-dim">Operator</div>
+        <div className="flex items-start justify-center gap-16">
+          <div className="flex flex-col items-center">
+            <Users className="h-7 w-7 text-os-text" />
+            <div className="mt-1 text-base font-bold tracking-wide">Thiago</div>
+            <div className="text-[10px] uppercase tracking-[0.3em] text-os-dim">Co-Founder</div>
+          </div>
+          <div className="flex flex-col items-center">
+            <Users className="h-7 w-7 text-os-text" />
+            <div className="mt-1 text-base font-bold tracking-wide">Marco</div>
+            <div className="text-[10px] uppercase tracking-[0.3em] text-os-dim">Co-Founder</div>
+          </div>
+        </div>
         <div className="mt-2 h-6 w-px bg-os-border-bright" />
         <div className="flex items-center gap-2">
           <span className="text-[10px] uppercase tracking-[0.2em] text-os-muted">Conductor (Super Agent)</span>

@@ -24,11 +24,11 @@ describe('agents Hermes tab', () => {
     expect(src).toContain('target="_blank"');
   });
 
-  test('the agents page wraps its body in AgentsTabs with the env-driven URL', () => {
+  test('the agents page wraps its body in AgentsTabs with an env-driven Hermes URL', () => {
     const page = read('app/agents/page.tsx');
     expect(page).toContain('AgentsTabs');
     expect(page).toContain('HERMES_DASH_URL');
-    expect(page).toContain('https://os.example.internal:9000');
+    expect(page).not.toContain('os.example.internal');
   });
 });
 

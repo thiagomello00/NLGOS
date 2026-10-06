@@ -686,6 +686,7 @@ export function openDb(path: string) {
       ).run(d.id, d.name, d.slug, d.tagline, d.color, d.order);
     },
     deleteWhereIdNotIn(ids: string[]): void {
+      if (ids.length === 0) { db.prepare('DELETE FROM departments').run(); return; }
       const placeholders = ids.map(() => '?').join(', ');
       db.prepare(`DELETE FROM departments WHERE id NOT IN (${placeholders})`).run(...ids);
     },
@@ -1242,6 +1243,14 @@ export function openDb(path: string) {
         .all()
         .map((r) => SocialAccountSchema.parse(r));
     },
+    /** Re-seed cleanup: drop demo accounts/history when the seed list is empty. */
+    clearSeededAudience(): void {
+      db.prepare('DELETE FROM social_accounts').run();
+      db.prepare('DELETE FROM social_snapshots').run();
+      db.prepare('DELETE FROM social_dms').run();
+      db.prepare('DELETE FROM social_dm_snapshots').run();
+      db.prepare('DELETE FROM social_dm_messages').run();
+    },
     insertSnapshot(s: SocialSnapshot): void {
       SocialSnapshotSchema.parse(s);
       db.prepare(
@@ -1658,6 +1667,7 @@ export function openDb(path: string) {
       ).run(p.id, p.departmentId, p.name, p.role, JSON.stringify(p.tools));
     },
     deleteWhereIdNotIn(ids: string[]): void {
+      if (ids.length === 0) { db.prepare('DELETE FROM people').run(); return; }
       const placeholders = ids.map(() => '?').join(', ');
       db.prepare(`DELETE FROM people WHERE id NOT IN (${placeholders})`).run(...ids);
     },
@@ -1687,6 +1697,7 @@ export function openDb(path: string) {
       ).run(t.id, t.departmentId, t.title, t.summary, JSON.stringify(t.steps), t.assigneeKind, t.assigneeId);
     },
     deleteWhereIdNotIn(ids: string[]): void {
+      if (ids.length === 0) { db.prepare('DELETE FROM sop_tasks').run(); return; }
       const placeholders = ids.map(() => '?').join(', ');
       db.prepare(`DELETE FROM sop_tasks WHERE id NOT IN (${placeholders})`).run(...ids);
     },
@@ -1879,6 +1890,10 @@ export function openDb(path: string) {
     /** Prune retired SEED rows only. Anything created from the OS is the operator's
      *  and is never deleted by a re-seed. */
     deleteWhereIdNotIn(ids: string[]): void {
+      if (ids.length === 0) {
+        db.prepare(`DELETE FROM lead_magnets WHERE origin = 'seed'`).run();
+        return;
+      }
       const placeholders = ids.map(() => '?').join(', ');
       db.prepare(
         `DELETE FROM lead_magnets WHERE origin = 'seed' AND id NOT IN (${placeholders})`,
@@ -1990,6 +2005,10 @@ export function openDb(path: string) {
       db.prepare(
         'INSERT OR REPLACE INTO funnel_touches (id, contact_id, seq, stage, channel, label, source, at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       ).run(t.id, t.contactId, t.seq, t.stage, t.channel, t.label, t.source, t.at);
+    },
+    clearAll(): void {
+      db.prepare('DELETE FROM funnel_touches').run();
+      db.prepare('DELETE FROM funnel_contacts').run();
     },
     /** Contacts with their touches in journey order, newest contact first. */
     journeys(venture?: FunnelVenture): FunnelJourney[] {
