@@ -194,7 +194,7 @@ const GATED_RECENT_POSTS: ZernioPost[] = [
   { platform: 'tiktok', caption: 'POV: your inbox, calendar and CRM run themselves', url: 'https://tiktok.com', publishedAt: gatedIso(1), status: 'published' },
   { platform: 'youtube', caption: 'I automated a 7-figure agency with AI agents — here is how', url: 'https://youtube.com', publishedAt: gatedIso(2), status: 'published' },
   { platform: 'twitter', caption: '5 agents that replaced 5 hires. Thread 👇', url: 'https://x.com', publishedAt: gatedIso(3), status: 'published' },
-  { platform: 'instagram', caption: 'Vantage case study: 3x pipeline in 60 days', url: 'https://instagram.com', publishedAt: gatedIso(4), status: 'published' },
+  { platform: 'instagram', caption: 'NLG Agency case study: 3x pipeline in 60 days', url: 'https://instagram.com', publishedAt: gatedIso(4), status: 'published' },
   { platform: 'linkedin', caption: 'Why every operator needs a knowledge graph, not another SaaS', url: 'https://linkedin.com', publishedAt: gatedIso(5), status: 'published' },
   { platform: 'tiktok', caption: 'Building an AI receptionist live (it books the call)', url: 'https://tiktok.com', publishedAt: gatedIso(6), status: 'published' },
   { platform: 'instagram', caption: 'The 4-inbox triage agent that saves me 10 hrs/week', url: 'https://instagram.com', publishedAt: gatedIso(8), status: 'published' },

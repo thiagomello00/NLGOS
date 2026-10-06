@@ -15,7 +15,7 @@ export const TOOL_BRANDS: Record<string, ToolBrand> = {
   adsmith: { slug: 'adsmith', name: 'Adsmith' },
   ledger: { slug: 'ledger', name: 'Ledger' },
   calendar: { slug: 'googlecalendar', name: 'Google Calendar' },
-  ghl: { slug: 'gohighlevel', name: 'GoHighLevel' },
+  ghl: { slug: 'gohighlevel', name: 'HighLevel' },
   gmail: { slug: 'gmail', name: 'Gmail' },
   dmflow: { slug: 'dmflow', name: 'DMFlow' },
   notion: { slug: 'notion', name: 'Notion' },

@@ -41,9 +41,9 @@ export const KEY_SLOTS: KeySlot[] = [
   // changed on the host without a rebuild. Read-only: no signing key exists.
   { envVar: 'NOTION_API_KEY', label: 'Notion integration secret', group: 'Knowledge', hint: 'internal integration; share Brand Deals Hub with it' },
   { envVar: 'PHANTOM_WALLET_ADDRESS', label: 'Phantom wallet address (public)', group: 'Payments', hint: 'Solana address, read-only balance', connectorId: 'payments' },
-  { envVar: 'STRIPE_VANTAGE_KEY', label: 'Stripe · Vantage secret key', group: 'Payments', connectorId: 'payments' },
-  { envVar: 'PAYKIT_LC_KEY', label: 'PayKit · Launchpad Cohort API key', group: 'Payments', hint: 'x-api-key for /public-api; rotating it here beats a redeploy', connectorId: 'payments' },
-  { envVar: 'PAYKIT_VANTAGE_KEY', label: 'PayKit · Vantage API key', group: 'Payments', connectorId: 'payments' },
+  { envVar: 'STRIPE_VANTAGE_KEY', label: 'Stripe · 2 secret key', group: 'Payments', connectorId: 'payments' },
+  { envVar: 'PAYKIT_LC_KEY', label: 'PayKit API key', group: 'Payments', hint: 'x-api-key for /public-api; rotating it here beats a redeploy', connectorId: 'payments' },
+  { envVar: 'PAYKIT_VANTAGE_KEY', label: 'PayKit · 2 API key', group: 'Payments', connectorId: 'payments' },
   { envVar: 'PAYPAL_CLIENT_ID', label: 'PayPal client id', group: 'Payments', connectorId: 'payments' },
   { envVar: 'PAYPAL_CLIENT_SECRET', label: 'PayPal client secret', group: 'Payments', connectorId: 'payments' },
   { envVar: 'SQUARE_ACCESS_TOKEN', label: 'Square access token', group: 'Payments', connectorId: 'payments' },

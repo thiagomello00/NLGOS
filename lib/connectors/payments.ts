@@ -15,14 +15,14 @@ export type ProcessorInfo = { id: string; name: string; configured: boolean };
 export function configuredProcessors(env: Record<string, string | undefined>): ProcessorInfo[] {
   return [
     { id: 'stripe', name: 'Stripe', configured: Boolean(env.STRIPE_SECRET_KEY) },
-    { id: 'stripe-vantage', name: 'Stripe · Vantage', configured: Boolean(env.STRIPE_VANTAGE_KEY) },
+    { id: 'stripe-vantage', name: 'Stripe · 2', configured: Boolean(env.STRIPE_VANTAGE_KEY) },
     {
       id: 'paypal',
       name: 'PayPal',
       configured: Boolean(env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET),
     },
-    { id: 'paykit-vantage', name: 'PayKit · Vantage', configured: Boolean(env.PAYKIT_VANTAGE_KEY) },
-    { id: 'paykit-lc', name: 'PayKit · Launchpad Cohort', configured: Boolean(env.PAYKIT_LC_KEY) },
+    { id: 'paykit-vantage', name: 'PayKit · 2', configured: Boolean(env.PAYKIT_VANTAGE_KEY) },
+    { id: 'paykit-lc', name: 'PayKit', configured: Boolean(env.PAYKIT_LC_KEY) },
     { id: 'wise-1', name: 'Wise', configured: Boolean(env.WISE_1_TOKEN) },
   ];
 }

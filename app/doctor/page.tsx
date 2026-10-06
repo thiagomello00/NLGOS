@@ -351,7 +351,7 @@ export default async function DoctorPage() {
               <FlowStep
                 dashed
                 title="Fallback: local grep"
-                detail="If Supabase is paused or unreachable, FOUNDER OS greps the markdown brain-store directly  -  fewer smarts, zero downtime."
+                detail="If Supabase is paused or unreachable, NLG OS greps the markdown brain-store directly  -  fewer smarts, zero downtime."
               />
             </div>
           </div>

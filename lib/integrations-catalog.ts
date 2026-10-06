@@ -37,7 +37,7 @@ export const INTEGRATIONS: Integration[] = [
   { slug: 'attio', name: 'Attio', tagline: 'CRM built on data', category: 'CRM & Sales', connectorId: 'attio', envKeys: ['ATTIO_API_KEY'] },
   { slug: 'zendesk', name: 'Zendesk', tagline: 'Tickets & support', category: 'CRM & Sales' },
   { slug: 'intercom', name: 'Intercom', tagline: 'Chat & lifecycle', category: 'CRM & Sales' },
-  { slug: 'gohighlevel', name: 'GoHighLevel', tagline: 'LC pipeline & contacts', category: 'CRM & Sales', connectorId: 'ghl', envKeys: ['GHL_API_KEY', 'GHL_LOCATION_ID'] },
+  { slug: 'gohighlevel', name: 'HighLevel', tagline: 'NLG Agency pipeline & contacts', category: 'CRM & Sales', connectorId: 'ghl', envKeys: ['GHL_API_KEY', 'GHL_LOCATION_ID'] },
 
   // Developer
   { slug: 'github', name: 'GitHub', tagline: 'Repos, issues & PRs', category: 'Developer', popular: true },
@@ -55,7 +55,7 @@ export const INTEGRATIONS: Integration[] = [
 
   // Finance
   { slug: 'stripe', name: 'Stripe', tagline: 'Payments & invoices', category: 'Finance', connectorId: 'payments', popular: true, envKeys: ['STRIPE_SECRET_KEY'] },
-  { slug: 'stripe-vantage', name: 'Stripe · Vantage', tagline: 'Vantage payments & invoices', category: 'Finance', connectorId: 'payments', envKeys: ['STRIPE_VANTAGE_KEY'] },
+  { slug: 'stripe-vantage', name: 'Stripe · 2', tagline: 'Second Stripe account', category: 'Finance', connectorId: 'payments', envKeys: ['STRIPE_VANTAGE_KEY'] },
   { slug: 'quickbooks', name: 'QuickBooks', tagline: 'Bookkeeping & P&L', category: 'Finance' },
   { slug: 'xero', name: 'Xero', tagline: 'Accounting & bills', category: 'Finance' },
   { slug: 'paypal', name: 'PayPal', tagline: 'Payments & payouts', category: 'Finance', envKeys: ['PAYPAL_CLIENT_ID', 'PAYPAL_CLIENT_SECRET'] },

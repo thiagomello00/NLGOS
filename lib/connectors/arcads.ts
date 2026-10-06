@@ -28,7 +28,7 @@ export async function arcadsStatus(): Promise<ConnectorStatus> {
       name: 'Arcads (UGC Ads)',
       kind: 'creative',
       state: 'connected',
-      detail: `Vantage workspace reachable · ${products} product${products === 1 ? '' : 's'}`,
+      detail: `Arcads workspace reachable · ${products} product${products === 1 ? '' : 's'}`,
       meta: { products },
     };
   } catch (err) {

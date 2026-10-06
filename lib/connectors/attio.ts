@@ -70,7 +70,7 @@ export async function attioStatus(
       name: 'Attio (CRM)',
       kind: 'crm',
       state: 'connected',
-      detail: `Vantage + LC pipeline reachable · ${deals}${deals === 50 ? '+' : ''} deals on record`,
+      detail: `CRM pipeline reachable · ${deals}${deals === 50 ? '+' : ''} deals on record`,
       meta: { deals },
     };
   } catch (err) {

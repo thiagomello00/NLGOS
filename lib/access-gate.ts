@@ -37,7 +37,7 @@ export function challengePage(): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>FounderOS · Private</title>
+<title>NLG OS · Private</title>
 <style>
   body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
          background:#0a0a0a; color:#f5f5f5; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
@@ -54,7 +54,7 @@ export function challengePage(): string {
 </head>
 <body>
   <div class="card">
-    <div class="mark"><b>F</b>OUNDER OS</div>
+    <div class="mark">NLG OS</div>
     <p>This OS is private. Enter your access token.</p>
     <form method="GET" action="/">
       <input name="token" type="password" placeholder="access token" autofocus>

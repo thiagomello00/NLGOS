@@ -42,7 +42,7 @@ describe('challenge page', () => {
     const html = challengePage();
     expect(html).toContain('<form');
     expect(html).toContain('name="token"');
-    expect(html.toLowerCase()).toContain('founderos');
+    expect(html.toLowerCase()).toContain('nlg os');
   });
 });
 

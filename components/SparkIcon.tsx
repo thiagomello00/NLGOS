@@ -21,7 +21,7 @@ export function SparkIcon({
   return (
     <span
       role="img"
-      aria-label="Vantage"
+      aria-label="NLG"
       className={`emblem inline-block shrink-0 ${className}`}
       style={{
         width: size,

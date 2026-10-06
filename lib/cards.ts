@@ -22,7 +22,7 @@ export type CardLane = {
 export const CARD_LANES: CardLane[] = [
   { id: 'gold', label: 'Gold · Personal', blurb: 'Personal-life spend' },
   { id: 'platinum', label: 'Platinum · Business', blurb: 'Business general + cohort programmes' },
-  { id: 'blue', label: 'Business Blue · Vantage', blurb: 'Second-entity (Vantage) spend' },
+  { id: 'blue', label: 'Business Blue · NLG', blurb: 'Agency entity spend' },
 ];
 
 export const DEFAULT_CARD: CardId = 'platinum';
