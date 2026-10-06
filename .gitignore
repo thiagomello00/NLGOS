@@ -35,3 +35,4 @@ data/candles/
 .sanitize.mjs
 
 node_modules
+data-backup-*/
