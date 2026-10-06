@@ -62,7 +62,6 @@ const NAV_GROUPS: [string, { href: string; label: string }[]][] = [
 const EXTERNAL: PaletteCommand[] = [
   { id: 'ext-command-center', kind: 'go', title: 'Command Center', sub: 'localhost:4000', glyph: '↗', href: 'http://localhost:4000', aliases: ['command-center', 'kanban', 'missions'] },
   { id: 'ext-remotion', kind: 'go', title: 'Remotion Studio', sub: 'localhost:3789', glyph: '↗', href: 'http://localhost:3789', aliases: ['video', 'render'] },
-  { id: 'ext-skool', kind: 'go', title: 'Skool Community', sub: 'skool.com', glyph: '↗', href: 'https://www.skool.com', aliases: ['community', 'launchpad cohorts'] },
   { id: 'ext-fathom', kind: 'go', title: 'Fathom Calls', sub: 'fathom.video', glyph: '↗', href: 'https://fathom.video', aliases: ['meetings', 'recordings'] },
   { id: 'ext-plaud', kind: 'go', title: 'Plaud Recordings', sub: 'web.plaud.ai', glyph: '↗', href: 'https://web.plaud.ai', aliases: ['voice', 'recorder', 'memos'] },
 ];
