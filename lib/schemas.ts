@@ -814,8 +814,31 @@ export const FunnelTouchSchema = z.object({
   acquisition: FunnelAcquisitionSchema.optional(),
 });
 
+export const NlgAcquisitionSchema = z.enum([
+  'instagram_meta',
+  'direct',
+  'organic',
+  'referral',
+  'other',
+  'unknown',
+]);
+
+export const NlgAttributionSchema = z.object({
+  category: NlgAcquisitionSchema,
+  firstTouchSource: z.string().nullable(),
+  campaign: z.string().nullable(),
+  content: z.string().nullable(),
+  opportunitySource: z.string().nullable(),
+  sessionSource: z.string().nullable(),
+  utmMedium: z.string().nullable(),
+  medium: z.string().nullable(),
+});
+
 export const FunnelJourneySchema = FunnelContactSchema.extend({
   touches: z.array(FunnelTouchSchema),
+  /** Live HighLevel first-touch taxonomy — absent on seeded / Attio journeys. */
+  nlgAcquisition: NlgAcquisitionSchema.optional(),
+  nlgAttribution: NlgAttributionSchema.optional(),
 });
 
 // One bar of the funnel: journeys that progressed at least this far, split by
@@ -890,6 +913,8 @@ export type FunnelContact = z.infer<typeof FunnelContactSchema>;
 export type FunnelAcquisition = z.infer<typeof FunnelAcquisitionSchema>;
 export type FunnelTouch = z.infer<typeof FunnelTouchSchema>;
 export type FunnelJourney = z.infer<typeof FunnelJourneySchema>;
+export type NlgAcquisition = z.infer<typeof NlgAcquisitionSchema>;
+export type NlgAttribution = z.infer<typeof NlgAttributionSchema>;
 export type FunnelStageRow = z.infer<typeof FunnelStageRowSchema>;
 export type FunnelSummary = z.infer<typeof FunnelSummarySchema>;
 export type WorkflowOwnerKind = z.infer<typeof WorkflowOwnerKindSchema>;

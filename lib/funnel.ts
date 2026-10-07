@@ -10,6 +10,7 @@ import {
   type FunnelSummary,
   type FunnelTouch,
   type FunnelVenture,
+  type NlgAttribution,
 } from '@/lib/schemas';
 
 /** Canonical HighLevel pipeline stages — labels match the live GHL names. */
@@ -176,6 +177,25 @@ export function presentFunnelJourneys(
   return { ...split, countMode: 'reached' };
 }
 
+/** Occupancy KPIs for the live HighLevel CRM funnel — not FounderOS "clients". */
+export function nlgFunnelKpis(journeys: FunnelJourney[]): {
+  totalLeads: number;
+  openLeads: number;
+  signed: number;
+  disqualified: number;
+  revenueUsd: number;
+} {
+  const signed = journeys.filter((j) => j.status === 'signed');
+  const disqualified = journeys.filter((j) => j.status === 'disqualified');
+  return {
+    totalLeads: journeys.length,
+    openLeads: journeys.length - signed.length - disqualified.length,
+    signed: signed.length,
+    disqualified: disqualified.length,
+    revenueUsd: signed.reduce((sum, j) => sum + (j.amountUsd ?? 0), 0),
+  };
+}
+
 /** One client in the open funnel space — everything the canvas needs to move it. */
 export type FunnelSpaceNode = {
   id: string;
@@ -206,6 +226,7 @@ export type FunnelSpaceNode = {
   role: string | null;
   linkedin: string | null;
   touches: FunnelTouch[];
+  nlgAttribution?: NlgAttribution;
 };
 
 /**
@@ -247,6 +268,7 @@ export function funnelSpaceModel(journeys: FunnelJourney[], now: Date): FunnelSp
       role: j.role,
       linkedin: j.linkedin,
       touches: j.touches,
+      nlgAttribution: j.nlgAttribution,
     };
   });
 }

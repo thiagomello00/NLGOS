@@ -10,10 +10,11 @@
  * explicit catch-all for what nothing tracked.
  */
 import { funnelSpaceModel, type FunnelSpaceNode } from '@/lib/funnel';
+import { NLG_ACQUISITIONS, nlgAcquisitionLabel, type NlgAcquisition } from '@/lib/funnel-ghl-attribution';
 import type { FunnelAcquisition, FunnelJourney, FunnelTouch } from '@/lib/schemas';
 
 /** Journeys and space nodes both qualify — classification reads touches only. */
-type HasTouches = { touches: FunnelTouch[] };
+type HasTouches = { touches: FunnelTouch[]; nlgAttribution?: FunnelJourney['nlgAttribution'] };
 
 export type { FunnelAcquisition };
 
@@ -82,6 +83,16 @@ export type FunnelOrigin = {
 };
 
 export function originOf(j: HasTouches): FunnelOrigin {
+  const attr = j.nlgAttribution;
+  if (attr) {
+    return {
+      segment: nlgAcquisitionLabel(attr.category),
+      entry: attr.content ?? attr.campaign ?? attr.firstTouchSource,
+      channel: attr.sessionSource,
+      source: attr.opportunitySource,
+      at: j.touches[0]?.at ?? null,
+    };
+  }
   const seg = ACQUISITIONS[SEGMENT_INDEX[acquisitionFor(j)]];
   const entry = j.touches[0] ?? null;
   return {
@@ -104,7 +115,7 @@ export type FunnelRadialNode = FunnelSpaceNode & {
 };
 
 export type FunnelRadialSegment = {
-  id: FunnelAcquisition;
+  id: FunnelAcquisition | NlgAcquisition;
   label: string;
   count: number;
   converted: number;
@@ -122,11 +133,18 @@ export type FunnelRadialModel = {
  * a fixed compass even when a wedge is empty.
  */
 export function funnelRadialModel(journeys: FunnelJourney[], now: Date): FunnelRadialModel {
-  const segments: FunnelRadialSegment[] = ACQUISITIONS.map((a) => ({ ...a, count: 0, converted: 0 }));
-  const acquisitionById = new Map(journeys.map((j) => [j.id, acquisitionFor(j)]));
+  const nlg = journeys.some((j) => j.nlgAcquisition);
+  const segments: FunnelRadialSegment[] = nlg
+    ? NLG_ACQUISITIONS.map((a) => ({ ...a, count: 0, converted: 0 }))
+    : ACQUISITIONS.map((a) => ({ ...a, count: 0, converted: 0 }));
+  const nlgIndex = Object.fromEntries(NLG_ACQUISITIONS.map((a, i) => [a.id, i])) as Record<NlgAcquisition, number>;
+  const byId = new Map(journeys.map((j) => [j.id, j]));
 
   const nodes: FunnelRadialNode[] = funnelSpaceModel(journeys, now).map((n) => {
-    const seg = SEGMENT_INDEX[acquisitionById.get(n.id) ?? 'word_of_mouth'];
+    const journey = byId.get(n.id);
+    const seg = nlg
+      ? nlgIndex[journey?.nlgAcquisition ?? 'unknown']
+      : SEGMENT_INDEX[acquisitionFor(journey ?? n)];
     segments[seg].count++;
     if (n.state === 'converted') segments[seg].converted++;
     return { ...n, segment: seg, rings: n.hubs, currentRing: n.currentHub };

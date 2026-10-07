@@ -36,22 +36,42 @@ export function funnelVolume({ journeys, archived, now, days = 30, countMode = '
   const totals = summary.stages.map((s) => s.total);
   const first = summary.stages[0];
 
-  const meters: FunnelMeter[] = FUNNEL_STAGES.slice(1).map((_, k) => {
-    const prev = totals[k] ?? 0;
-    const next = totals[k + 1] ?? 0;
-    const frac = prev > 0 ? next / prev : 0;
+  const occupancyMeters: FunnelMeter[] = FUNNEL_STAGES.map((s, i) => {
+    const total = journeys.length;
+    const n = totals[i] ?? 0;
     return {
-      label: `${HANDOFF[k]} (${next}/${prev})`,
-      frac,
-      display: prev > 0 ? `${Math.round(frac * 100)}%` : 'no leads',
-      hue: HUES[k % HUES.length],
+      label: `${s.label} (${n})`,
+      frac: total > 0 ? n / total : 0,
+      display: String(n),
+      hue: HUES[i % HUES.length],
     };
   });
 
+  const meters: FunnelMeter[] =
+    countMode === 'occupancy'
+      ? occupancyMeters
+      : FUNNEL_STAGES.slice(1).map((_, k) => {
+          const prev = totals[k] ?? 0;
+          const next = totals[k + 1] ?? 0;
+          const frac = prev > 0 ? next / prev : 0;
+          return {
+            label: `${HANDOFF[k]} (${next}/${prev})`,
+            frac,
+            display: prev > 0 ? `${Math.round(frac * 100)}%` : 'no leads',
+            hue: HUES[k % HUES.length],
+          };
+        });
+
   const stalled = journeys.filter((j) => journeyMeta(j, now).state === 'stalled').length;
-  const chips: FunnelChip[] = [{ tone: 'ok', text: `${summary.converted} closed` }];
-  if (stalled > 0) chips.push({ tone: 'err', text: `${stalled} stalled` });
-  if (archived > 0) chips.push({ text: `${archived} archived` });
+  const chips: FunnelChip[] =
+    countMode === 'occupancy'
+      ? [
+          { tone: 'ok', text: `${summary.converted} signed` },
+          { text: `${journeys.filter((j) => j.status === 'disqualified').length} disqualified` },
+        ]
+      : [{ tone: 'ok', text: `${summary.converted} closed` }];
+  if (countMode !== 'occupancy' && stalled > 0) chips.push({ tone: 'err', text: `${stalled} stalled` });
+  if (countMode !== 'occupancy' && archived > 0) chips.push({ text: `${archived} archived` });
 
   // Touches per UTC day over the trailing window ending today.
   const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
@@ -67,9 +87,15 @@ export function funnelVolume({ journeys, archived, now, days = 30, countMode = '
   return {
     revenueUsd: summary.revenueUsd,
     chips,
-    caption: `closed revenue across ${plural(journeys.length, 'active client')} · ${first?.organic ?? 0} organic / ${first?.ads ?? 0} ads entry`,
+    caption:
+      countMode === 'occupancy'
+        ? `signed HighLevel value across ${plural(journeys.length, 'lead')}`
+        : `closed revenue across ${plural(journeys.length, 'active client')} · ${first?.organic ?? 0} organic / ${first?.ads ?? 0} ads entry`,
     meters,
-    foot: `each bar is a stage over the one before · ${endToEnd === null ? 'no leads yet' : `${endToEnd}% end to end`}`,
+    foot:
+      countMode === 'occupancy'
+        ? 'current pipeline occupancy · not historical conversion'
+        : `each bar is a stage over the one before · ${endToEnd === null ? 'no leads yet' : `${endToEnd}% end to end`}`,
     series,
     touchesInWindow: series.reduce((n, s) => n + s.count, 0),
     insight: {

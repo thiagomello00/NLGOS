@@ -10,6 +10,7 @@
 import { resolveCred, CRED_FILES } from '@/lib/creds';
 import { FUNNEL_STAGES, isWonStage } from '@/lib/funnel';
 import { FunnelJourneySchema, type FunnelJourney, type FunnelStage, type FunnelTouch } from '@/lib/schemas';
+import { nlgAttributionFromGhl, type GhlAttributionFields } from '@/lib/funnel-ghl-attribution';
 
 export type GhlPipeline = {
   id: string;
@@ -30,7 +31,7 @@ export type GhlOpportunity = {
   contactId?: string;
   contact?: { name?: string; email?: string | null; phone?: string | null };
   source?: string;
-  attributions?: { utmSource?: string; medium?: string }[];
+  attributions?: GhlAttributionFields[];
 };
 
 const GHL_BASE = 'https://services.leadconnectorhq.com';
@@ -183,6 +184,7 @@ export function mapGhlOpportunities(
           at: i === hubIdx ? lastAt : createdAt,
         }));
 
+    const nlgAttr = opts.currentCrmState ? nlgAttributionFromGhl({ source: o.source, attributions: o.attributions }) : undefined;
     try {
       journeys.push(
         FunnelJourneySchema.parse({
@@ -191,7 +193,7 @@ export function mapGhlOpportunities(
           venture: 'nlg',
           status: canonical,
           product: isWonStage(canonical) ? `GHL: ${stage.name}` : null,
-          amountUsd: value > 0 ? value : won ? 0 : null,
+          amountUsd: opts.currentCrmState ? value : value > 0 ? value : won ? 0 : null,
           relationship: score >= 70 ? 'hot' : score >= 40 ? 'warm' : 'cold',
           likelihood: score,
           url:
@@ -202,6 +204,7 @@ export function mapGhlOpportunities(
           phone: o.contact?.phone ?? null,
           createdAt,
           touches,
+          ...(nlgAttr ? { nlgAcquisition: nlgAttr.category, nlgAttribution: nlgAttr } : {}),
         }),
       );
     } catch {

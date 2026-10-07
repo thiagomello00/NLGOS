@@ -4,6 +4,7 @@ import {
   attentionQueue,
   funnelSummary,
   journeyMeta,
+  nlgFunnelKpis,
   presentFunnelJourneys,
   decayFactor,
   DECAY_DAYS,
@@ -338,6 +339,8 @@ export default async function FunnelPage({
   const allJourneys = composed.journeys;
   const { active: journeys, archived, countMode } = presentFunnelJourneys(allJourneys, now);
   const summary = funnelSummary(journeys, countMode);
+  const kpis = countMode === 'occupancy' ? nlgFunnelKpis(journeys) : null;
+  const crmLive = countMode === 'occupancy';
   const radial = layout === 'radial' ? funnelRadialModel(journeys, now) : null;
   const spaceNodes = layout === 'flow' ? funnelSpaceModel(journeys, now) : null;
   // ?lead= (attention-rail clicks) pins that lead's dossier in the canvas
@@ -367,7 +370,11 @@ export default async function FunnelPage({
       <SlabTitle
         eyebrow="client journeys · leads → conversations → sales"
         title="Funnel"
-        meta={`${summary.clients} active client${summary.clients === 1 ? '' : 's'} · ${summary.converted} closed · ${usd(summary.revenueUsd)} revenue · ${archived.length} archived`}
+        meta={
+          kpis
+            ? `${kpis.totalLeads} total leads · ${kpis.openLeads} open · ${kpis.signed} signed · ${usd(kpis.revenueUsd)} revenue · ${kpis.disqualified} disqualified`
+            : `${summary.clients} active client${summary.clients === 1 ? '' : 's'} · ${summary.converted} closed · ${usd(summary.revenueUsd)} revenue · ${archived.length} archived`
+        }
         right={
           <>
             {isLive ? (
@@ -378,7 +385,9 @@ export default async function FunnelPage({
               </Badge>
             )}
             <span className="rounded-full border border-os-border px-4 py-2 text-[13px] tabular-nums text-os-muted">
-              {summary.converted}/{summary.clients} converted · {usd(summary.revenueUsd)}
+              {kpis
+                ? `${kpis.signed} signed · ${usd(kpis.revenueUsd)}`
+                : `${summary.converted}/${summary.clients} converted · ${usd(summary.revenueUsd)}`}
             </span>
           </>
         }
@@ -418,8 +427,10 @@ export default async function FunnelPage({
           <SourceCheck status={metaAds} />
         </span>
         <span className="ml-auto flex items-center gap-1.5">
-          <FunnelLayoutToggle layout={layout} archived={view === 'archive'}
+          <FunnelLayoutToggle layout={layout} archived={!crmLive && view === 'archive'}
             options={VIEWS.map(v => ({ ...v, href: href(venture, 'live', stage, v.id, lead) }))} />
+          {!crmLive && (
+            <>
           <span className="mx-0.5 h-3 w-px bg-os-border" />
           <Link
             href={view === 'archive' ? href(venture, 'live') : href(venture, 'archive')}
@@ -433,6 +444,8 @@ export default async function FunnelPage({
           >
             Archive ({archived.length})
           </Link>
+            </>
+          )}
         </span>
       </Rise>
 
@@ -502,7 +515,7 @@ export default async function FunnelPage({
       {/* Below the graph, the Brand Deals rows: volume, activity, THE insight. */}
       {view === 'live' && (
         <div className="mt-6 grid grid-cols-3 gap-6 max-[1200px]:grid-cols-1">
-          <SlabCard title="Funnel Volume" sub={`${summary.clients} active`} i={4} className="flex flex-col">
+          <SlabCard title="Funnel Volume" sub={kpis ? `${kpis.totalLeads} leads` : `${summary.clients} active`} i={4} className="flex flex-col">
             <div className="flex flex-1 flex-col px-6 pb-6 pt-3">
               <BigStat value={vol.revenueUsd} kind="usd" chips={vol.chips} caption={vol.caption} />
               <MeterStack meters={vol.meters} foot={vol.foot} empty="no leads yet" />
@@ -529,7 +542,7 @@ export default async function FunnelPage({
 
       {/* What to act on today: the funnel answering a question. Every row
           click pins that lead's dossier in the canvas above. */}
-      {view === 'live' && (attention.pushNow.length > 0 || attention.saveNow.length > 0) && (
+      {view === 'live' && !crmLive && (attention.pushNow.length > 0 || attention.saveNow.length > 0) && (
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
           <SlabCard title="Push Now" sub="hot + moving · close them" i={7}>
             <div className="mt-4 border-t border-os-border">

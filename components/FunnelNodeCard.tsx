@@ -157,16 +157,43 @@ export function FunnelNodeCard({ node, onClose }: { node: FunnelSpaceNode; onClo
         <div className="flex items-baseline gap-2 text-[11px]">
           <span className="shrink-0 font-semibold text-os-text">{origin.segment}</span>
           {origin.at && <span className="shrink-0 font-mono text-[9.5px] text-os-dim">{origin.at}</span>}
-          {origin.source && (
-            <span className="shrink-0 rounded-sm-t border border-os-border px-1 font-mono text-[8.5px] uppercase tracking-wide text-os-dim">
-              {origin.source}
-            </span>
-          )}
         </div>
-        {origin.entry && (
-          <div className="mt-0.5 truncate text-[10.5px] text-os-muted" title={origin.entry}>
-            {origin.entry}
+        {node.nlgAttribution ? (
+          <div className="mt-1 flex flex-col gap-0.5 font-mono text-[10px] text-os-muted">
+            {node.nlgAttribution.firstTouchSource && (
+              <div className="truncate" title={node.nlgAttribution.firstTouchSource}>
+                first touch · {node.nlgAttribution.firstTouchSource}
+              </div>
+            )}
+            {node.nlgAttribution.campaign && (
+              <div className="truncate" title={node.nlgAttribution.campaign}>
+                campaign · {node.nlgAttribution.campaign}
+              </div>
+            )}
+            {node.nlgAttribution.content && (
+              <div className="truncate" title={node.nlgAttribution.content}>
+                ad · {node.nlgAttribution.content}
+              </div>
+            )}
+            {node.nlgAttribution.opportunitySource && (
+              <div className="truncate" title={node.nlgAttribution.opportunitySource}>
+                GHL source · {node.nlgAttribution.opportunitySource}
+              </div>
+            )}
           </div>
+        ) : (
+          <>
+            {origin.source && (
+              <span className="mt-0.5 inline-block rounded-sm-t border border-os-border px-1 font-mono text-[8.5px] uppercase tracking-wide text-os-dim">
+                {origin.source}
+              </span>
+            )}
+            {origin.entry && (
+              <div className="mt-0.5 truncate text-[10.5px] text-os-muted" title={origin.entry}>
+                {origin.entry}
+              </div>
+            )}
+          </>
         )}
       </div>
 
