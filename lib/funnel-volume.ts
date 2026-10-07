@@ -1,4 +1,4 @@
-import { attentionQueue, funnelSummary, journeyMeta, FUNNEL_STAGES } from '@/lib/funnel';
+import { attentionQueue, funnelSummary, journeyMeta, FUNNEL_STAGES, type FunnelCountMode } from '@/lib/funnel';
 import type { FunnelJourney } from '@/lib/schemas';
 
 /**
@@ -31,8 +31,8 @@ const MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'O
 const dayLabel = (iso: string) => `${MONTH[Number(iso.slice(5, 7)) - 1]} ${Number(iso.slice(8, 10))}`;
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-export function funnelVolume({ journeys, archived, now, days = 30 }: { journeys: FunnelJourney[]; archived: number; now: Date; days?: number }): FunnelVolume {
-  const summary = funnelSummary(journeys);
+export function funnelVolume({ journeys, archived, now, days = 30, countMode = 'reached' }: { journeys: FunnelJourney[]; archived: number; now: Date; days?: number; countMode?: FunnelCountMode }): FunnelVolume {
+  const summary = funnelSummary(journeys, countMode);
   const totals = summary.stages.map((s) => s.total);
   const first = summary.stages[0];
 

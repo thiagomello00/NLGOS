@@ -63,12 +63,17 @@ export const DECAY_FADE_START = 21;
  * dies before it archives. Converted never decays; advancing a stage resets
  * the quiet clock, so movement is what keeps a lead vivid.
  */
-export function decayFactor(daysSinceLastTouch: number, status: FunnelStage): number {
-  if (isClosedStage(status)) return 0;
+export function decayFactor(daysSinceLastTouch: number, status: FunnelStage, crmLocked = false): number {
+  if (crmLocked || isClosedStage(status)) return 0;
   return Math.min(1, Math.max(0, (daysSinceLastTouch - DECAY_FADE_START) / (DECAY_DAYS - DECAY_FADE_START)));
 }
 
 export type JourneyState = 'converted' | 'stalled' | 'active' | 'decayed';
+
+/** HighLevel CRM rows: stage membership follows current pipeline stage, not quiet-time. */
+export function isLiveCrmJourney(j: FunnelJourney): boolean {
+  return j.id.startsWith('ghl-') || j.touches.some((t) => t.source === 'ghl');
+}
 
 /**
  * Liveness of one journey at `now`: how long since the operator last touched them,
@@ -82,6 +87,9 @@ export type JourneyState = 'converted' | 'stalled' | 'active' | 'decayed';
 export function journeyMeta(j: FunnelJourney, now: Date): { daysSinceLastTouch: number; state: JourneyState } {
   const lastAt = j.touches[j.touches.length - 1]?.at ?? j.createdAt;
   const days = Math.max(0, Math.floor((now.getTime() - new Date(`${lastAt}T00:00:00Z`).getTime()) / 86_400_000));
+  if (isLiveCrmJourney(j)) {
+    return { daysSinceLastTouch: days, state: isWonStage(j.status) ? 'converted' : 'active' };
+  }
   const canStall = !isClosedStage(j.status) && j.status !== 'new_lead';
   const state: JourneyState =
     isWonStage(j.status)
@@ -150,6 +158,24 @@ export function splitFunnelJourneys(
   return { active, archived };
 }
 
+export type FunnelCountMode = 'reached' | 'occupancy';
+
+/**
+ * Live HighLevel: every opportunity stays in the space at its current CRM
+ * stage. Seeded / Attio journeys keep the FounderOS archive split.
+ */
+export function presentFunnelJourneys(
+  journeys: FunnelJourney[],
+  now: Date,
+): { active: FunnelJourney[]; archived: FunnelJourney[]; countMode: FunnelCountMode } {
+  const crm = journeys.filter(isLiveCrmJourney);
+  if (crm.length > 0) {
+    return { active: crm, archived: [], countMode: 'occupancy' };
+  }
+  const split = splitFunnelJourneys(journeys, now);
+  return { ...split, countMode: 'reached' };
+}
+
 /** One client in the open funnel space — everything the canvas needs to move it. */
 export type FunnelSpaceNode = {
   id: string;
@@ -212,7 +238,7 @@ export function funnelSpaceModel(journeys: FunnelJourney[], now: Date): FunnelSp
       currentHub: hubs[hubs.length - 1],
       // Constellation-small: 2.5–5.5px by likelihood, knowledge-graph texture.
       radius: 2.5 + (j.likelihood / 100) * 3,
-      decay: decayFactor(meta.daysSinceLastTouch, j.status),
+      decay: decayFactor(meta.daysSinceLastTouch, j.status, isLiveCrmJourney(j)),
       url: j.url,
       email: j.email,
       phone: j.phone,
@@ -231,22 +257,27 @@ export function funnelSpaceModel(journeys: FunnelJourney[], now: Date): FunnelSp
  * skipped the optional `nurtured` touch still progressed past that point.
  * The organic/ads split keys off each journey's first touch.
  */
-export function funnelSummary(journeys: FunnelJourney[]): FunnelSummary {
+export function funnelSummary(journeys: FunnelJourney[], mode: FunnelCountMode = 'reached'): FunnelSummary {
   const converted = journeys.filter((j) => isWonStage(j.status));
   const stages = FUNNEL_STAGES.map(({ id }, i) => {
-    const reached = journeys.filter((j) => STAGE_INDEX[j.status] >= i);
+    const members =
+      mode === 'occupancy'
+        ? journeys.filter((j) => j.status === id)
+        : journeys.filter((j) => STAGE_INDEX[j.status] >= i);
     const firstChannel = (j: FunnelJourney) => j.touches[0]?.channel;
     return {
       stage: id,
-      total: reached.length,
-      organic: reached.filter((j) => firstChannel(j) === 'organic').length,
-      ads: reached.filter((j) => firstChannel(j) === 'ads').length,
+      total: members.length,
+      organic: members.filter((j) => firstChannel(j) === 'organic').length,
+      ads: members.filter((j) => firstChannel(j) === 'ads').length,
       conversionFromPrev: null as number | null,
     };
   });
-  for (let i = 1; i < stages.length; i++) {
-    const prev = stages[i - 1].total;
-    stages[i].conversionFromPrev = prev > 0 ? Math.round((stages[i].total / prev) * 1000) / 10 : null;
+  if (mode === 'reached') {
+    for (let i = 1; i < stages.length; i++) {
+      const prev = stages[i - 1].total;
+      stages[i].conversionFromPrev = prev > 0 ? Math.round((stages[i].total / prev) * 1000) / 10 : null;
+    }
   }
   return FunnelSummarySchema.parse({
     clients: journeys.length,

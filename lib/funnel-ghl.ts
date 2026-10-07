@@ -36,6 +36,60 @@ export type GhlOpportunity = {
 const GHL_BASE = 'https://services.leadconnectorhq.com';
 const GHL_VERSION = '2021-07-28';
 
+/** Page size HighLevel accepts on opportunity search. */
+export const GHL_SEARCH_LIMIT = 100;
+/** Safety ceiling: 80 pages × 100 = 8,000 opportunities (live location is ~2.3k). */
+export const GHL_MAX_PAGES = 80;
+
+/** The only HighLevel pipeline that may feed Funnel. Matched by exact name; UUID is discovered at runtime. */
+export const NLG_AGENCY_PIPELINE_NAME = 'NLG Agency';
+
+/**
+ * Pick the NLG Agency pipeline by exact name. UUIDs stay dynamic — never hardcoded.
+ */
+export function selectNlgSalesPipeline(pipelines: GhlPipeline[]): GhlPipeline | null {
+  return pipelines.find((p) => p.name.trim() === NLG_AGENCY_PIPELINE_NAME) ?? null;
+}
+
+export type GhlSearchPage = {
+  opportunities: GhlOpportunity[];
+  nextPage?: number | null;
+};
+
+/** Walk HighLevel search pages until a short page, a null nextPage, or the safety ceiling. */
+export async function collectGhlSearchOpportunities(
+  fetchPage: (page: number) => Promise<GhlSearchPage>,
+  options: { pageSize?: number; maxPages?: number } = {},
+): Promise<GhlOpportunity[]> {
+  const pageSize = options.pageSize ?? GHL_SEARCH_LIMIT;
+  const maxPages = options.maxPages ?? GHL_MAX_PAGES;
+  const out: GhlOpportunity[] = [];
+  for (let page = 1; page <= maxPages; page++) {
+    const { opportunities, nextPage } = await fetchPage(page);
+    const batch = opportunities ?? [];
+    out.push(...batch);
+    if (batch.length < pageSize) break;
+    if (nextPage === null) break;
+  }
+  return out;
+}
+
+/** Scope a location payload to the NLG sales pipeline, then map journeys. */
+export function importNlgSalesFunnel(
+  pipelines: GhlPipeline[],
+  opportunities: GhlOpportunity[],
+  now: Date,
+  locationId?: string,
+): { journeys: FunnelJourney[]; excluded: number; total: number; pipelineName: string | null } {
+  const selected = selectNlgSalesPipeline(pipelines);
+  if (!selected) {
+    return { journeys: [], excluded: opportunities.length, total: 0, pipelineName: null };
+  }
+  const scoped = opportunities.filter((o) => o.pipelineId === selected.id);
+  const mapped = mapGhlOpportunities([selected], scoped, now, locationId, { currentCrmState: true });
+  return { ...mapped, excluded: opportunities.length - scoped.length, pipelineName: selected.name };
+}
+
 const GHL_STAGE_BY_NAME: Record<string, FunnelStage> = {
   'new lead': 'new_lead',
   'scheduled call': 'scheduled_call',
@@ -67,6 +121,7 @@ export function mapGhlOpportunities(
   opportunities: GhlOpportunity[],
   now: Date,
   locationId?: string,
+  opts: { currentCrmState?: boolean } = {},
 ): { journeys: FunnelJourney[]; excluded: number; total: number } {
   const stageIndex = new Map<string, { idx: number; count: number; name: string }>();
   for (const p of pipelines) {
@@ -83,7 +138,8 @@ export function mapGhlOpportunities(
     const fraction = stage.count > 1 ? stage.idx / (stage.count - 1) : 0;
     const lost = o.status === 'lost' || o.status === 'abandoned';
     const won = o.status === 'won';
-    const canonical: FunnelStage = won ? 'signed' : lost ? 'disqualified' : stageFor(fraction, stage.name);
+    const named = stageFromName(stage.name) ?? stageFor(fraction, stage.name);
+    const canonical: FunnelStage = opts.currentCrmState ? named : won ? 'signed' : lost ? 'disqualified' : named;
     const hubIdx = FUNNEL_STAGES.findIndex((s) => s.id === canonical);
     const id = `ghl-${o.id}`;
     const createdAt = day(o.createdAt, '1970-01-01');
@@ -98,21 +154,34 @@ export function mapGhlOpportunities(
     ];
     const score = won ? 100 : lost ? 0 : Math.min(100, 20 + Math.round(fraction * 50) + (value > 0 ? 15 : 0));
 
-    const touches: FunnelTouch[] = FUNNEL_STAGES.slice(0, Math.max(0, hubIdx) + 1).map((s, i) => ({
-      id: `${id}-t${i + 1}`,
-      contactId: id,
-      seq: i + 1,
-      stage: s.id,
-      channel: i === hubIdx && won ? 'checkout' : 'crm',
-      label:
-        i === 0
-          ? `Opportunity created in GHL${via.length ? ` · via: ${via.join(', ')}` : ''}`
-          : i === hubIdx
-            ? `GHL stage: ${stage.name}${won ? ' (won)' : lost ? ' (lost)' : ''}`
-            : `Progressed to ${s.label}`,
-      source: 'ghl' as const,
-      at: i === hubIdx ? lastAt : createdAt,
-    }));
+    const touches: FunnelTouch[] = opts.currentCrmState
+      ? [
+          {
+            id: `${id}-t1`,
+            contactId: id,
+            seq: 1,
+            stage: canonical,
+            channel: 'crm',
+            label: `GHL stage: ${stage.name}`,
+            source: 'ghl' as const,
+            at: lastAt,
+          },
+        ]
+      : FUNNEL_STAGES.slice(0, Math.max(0, hubIdx) + 1).map((s, i) => ({
+          id: `${id}-t${i + 1}`,
+          contactId: id,
+          seq: i + 1,
+          stage: s.id,
+          channel: i === hubIdx && won ? 'checkout' : 'crm',
+          label:
+            i === 0
+              ? `Opportunity created in GHL${via.length ? ` · via: ${via.join(', ')}` : ''}`
+              : i === hubIdx
+                ? `GHL stage: ${stage.name}${won ? ' (won)' : lost ? ' (lost)' : ''}`
+                : `Progressed to ${s.label}`,
+          source: 'ghl' as const,
+          at: i === hubIdx ? lastAt : createdAt,
+        }));
 
     try {
       journeys.push(
@@ -165,18 +234,19 @@ export async function ghlFunnelJourneys(
     if (!pipeRes.ok) return null;
     const pipelines = ((await pipeRes.json()) as { pipelines?: GhlPipeline[] }).pipelines ?? [];
 
-    const opportunities: GhlOpportunity[] = [];
-    for (let page = 1; page <= 10; page++) {
+    const opportunities = await collectGhlSearchOpportunities(async (page) => {
       const res = await fetch(
-        `${GHL_BASE}/opportunities/search?location_id=${locationId}&limit=100&page=${page}`,
+        `${GHL_BASE}/opportunities/search?location_id=${locationId}&limit=${GHL_SEARCH_LIMIT}&page=${page}`,
         { headers, cache: 'no-store' },
       );
-      if (!res.ok) return null;
-      const batch = ((await res.json()) as { opportunities?: GhlOpportunity[] }).opportunities ?? [];
-      opportunities.push(...batch);
-      if (batch.length < 100) break;
-    }
-    return mapGhlOpportunities(pipelines, opportunities, now, locationId);
+      if (!res.ok) throw new Error('ghl-search');
+      const body = (await res.json()) as {
+        opportunities?: GhlOpportunity[];
+        meta?: { nextPage?: number | null };
+      };
+      return { opportunities: body.opportunities ?? [], nextPage: body.meta?.nextPage ?? null };
+    });
+    return importNlgSalesFunnel(pipelines, opportunities, now, locationId);
   } catch {
     return null;
   }

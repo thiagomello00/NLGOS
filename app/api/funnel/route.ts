@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { funnelSummary, splitFunnelJourneys } from '@/lib/funnel';
+import { funnelSummary, presentFunnelJourneys } from '@/lib/funnel';
 import { composeFunnelJourneys, funnelSourceLabel } from '@/lib/funnel-compose';
 import { FunnelVentureSchema, type FunnelVenture } from '@/lib/schemas';
 
@@ -20,9 +20,9 @@ export async function GET(req: Request) {
   // touches + Stripe settled payments folded on, venture-filtered; seeded
   // funnel when nothing is live. Quiet >90d splits into `archived`.
   const composed = await composeFunnelJourneys(now, venture);
-  const { active, archived } = splitFunnelJourneys(composed.journeys, now);
+  const { active, archived, countMode } = presentFunnelJourneys(composed.journeys, now);
   return NextResponse.json({
-    summary: funnelSummary(active),
+    summary: funnelSummary(active, countMode),
     journeys: active,
     archived,
     source: funnelSourceLabel(composed),

@@ -8,7 +8,7 @@
  */
 import { NAV_AGENTS, NAV_INTELLIGENCE, NAV_LIBRARY, NAV_OPERATE, NAV_SYSTEM } from '@/lib/nav';
 import { getDb } from '@/lib/data';
-import { funnelSummary, journeyMeta, splitFunnelJourneys, FUNNEL_STAGES, isWonStage } from '@/lib/funnel';
+import { funnelSummary, journeyMeta, presentFunnelJourneys, FUNNEL_STAGES, isWonStage } from '@/lib/funnel';
 import { attioFunnelJourneys } from '@/lib/funnel-live';
 import { ghlFunnelJourneys } from '@/lib/funnel-ghl';
 
@@ -50,8 +50,8 @@ async function funnelContext(): Promise<string> {
   const [attioLive, ghlLive] = await Promise.all([attioFunnelJourneys(now), ghlFunnelJourneys(now)]);
   const live = [...(attioLive?.journeys ?? []), ...(ghlLive?.journeys ?? [])];
   const all = live.length > 0 ? live : getDb().funnel.journeys();
-  const { active, archived } = splitFunnelJourneys(all, now);
-  const summary = funnelSummary(active);
+  const { active, archived, countMode } = presentFunnelJourneys(all, now);
+  const summary = funnelSummary(active, countMode);
   const metas = active.map((j) => ({ j, meta: journeyMeta(j, now) }));
   const decaying = metas.filter(({ j, meta }) => !isWonStage(j.status) && meta.daysSinceLastTouch > 21).length;
   const reddest = metas

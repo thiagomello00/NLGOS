@@ -118,10 +118,12 @@ function replayPos(n: FunnelRadialNode, i: number, tMs: number, stagger: number)
 export function FunnelRadial({
   model,
   initialLeadId,
+  crmLocked = false,
 }: {
   model: FunnelRadialModel;
   /** Deep link (?lead=)  -  the attention rail pins this lead's dossier. */
   initialLeadId?: string | null;
+  crmLocked?: boolean;
 }) {
   const { nodes, segments } = model;
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -364,7 +366,9 @@ export function FunnelRadial({
             className="h-2 w-2 rounded-full"
             style={{ background: 'color-mix(in oklab, var(--err) 70%, var(--funnel-s1))', opacity: 0.6 }}
           />{' '}
-          fades red after {DECAY_FADE_START}d quiet → archive at {DECAY_DAYS}d
+          {crmLocked
+            ? 'current HighLevel stage · quiet time is age, not membership'
+            : `fades red after ${DECAY_FADE_START}d quiet → archive at ${DECAY_DAYS}d`}
         </span>
         <span className="ml-auto">wedge = Trakyo first touch when attributed · untracked = word of mouth · click a node</span>
       </div>

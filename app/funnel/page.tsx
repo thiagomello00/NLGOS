@@ -4,7 +4,7 @@ import {
   attentionQueue,
   funnelSummary,
   journeyMeta,
-  splitFunnelJourneys,
+  presentFunnelJourneys,
   decayFactor,
   DECAY_DAYS,
   FUNNEL_STAGES,
@@ -327,17 +327,17 @@ export default async function FunnelPage({
   const composed = await composeFunnelJourneys(now, venture);
   const { attioLive, ghlLive, isLive } = composed;
   const excludedCount = (attioLive?.closedLost ?? 0) + (ghlLive?.excluded ?? 0);
-  const liveLabel = [
-    attioLive && attioLive.journeys.length > 0 ? `Attio ${attioLive.total}` : null,
-    ghlLive && ghlLive.journeys.length > 0 ? `GHL ${ghlLive.total}` : null,
-    composed.stripeWins && composed.stripeWins.length > 0 ? `Stripe ${composed.stripeWins.length}` : null,
-  ]
-    .filter(Boolean)
-    .join(' + ');
+  const liveLabel = ghlLive && ghlLive.journeys.length > 0
+    ? `GHL ${ghlLive.total}`
+    : [
+        attioLive && attioLive.journeys.length > 0 ? `Attio ${attioLive.total}` : null,
+        composed.stripeWins && composed.stripeWins.length > 0 ? `Stripe ${composed.stripeWins.length}` : null,
+      ]
+        .filter(Boolean)
+        .join(' + ');
   const allJourneys = composed.journeys;
-  // Quiet past DECAY_DAYS → out of the space, into the archive tab.
-  const { active: journeys, archived } = splitFunnelJourneys(allJourneys, now);
-  const summary = funnelSummary(journeys);
+  const { active: journeys, archived, countMode } = presentFunnelJourneys(allJourneys, now);
+  const summary = funnelSummary(journeys, countMode);
   const radial = layout === 'radial' ? funnelRadialModel(journeys, now) : null;
   const spaceNodes = layout === 'flow' ? funnelSpaceModel(journeys, now) : null;
   // ?lead= (attention-rail clicks) pins that lead's dossier in the canvas
@@ -360,7 +360,7 @@ export default async function FunnelPage({
     metaAdsStatus(),
   ]);
   // Funnel Volume, the step line and the insight card (lib/funnel-volume).
-  const vol = funnelVolume({ journeys, archived: archived.length, now });
+  const vol = funnelVolume({ journeys, archived: archived.length, now, countMode });
 
   return (
     <Slab>
@@ -491,9 +491,9 @@ export default async function FunnelPage({
         <Rise as="section" i={2}>
           <div className="rounded-lg-t border border-os-border bg-os-surface p-2">
             {radial ? (
-              <FunnelRadialLazy model={radial} initialLeadId={lead} />
+              <FunnelRadialLazy model={radial} initialLeadId={lead} crmLocked={countMode === 'occupancy'} />
             ) : spaceNodes ? (
-              <FunnelSpaceLazy nodes={spaceNodes} summary={summary} initialLeadId={lead} />
+              <FunnelSpaceLazy nodes={spaceNodes} summary={summary} initialLeadId={lead} crmLocked={countMode === 'occupancy'} />
             ) : null}
           </div>
         </Rise>

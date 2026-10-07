@@ -50,14 +50,18 @@ export async function composeFunnelJourneys(
   deps: FunnelComposeDeps = DEFAULT_DEPS,
 ): Promise<FunnelComposition> {
   const [attioLive, ghlLive, stripeWins] = await Promise.all([deps.attio(now), deps.ghl(now), deps.stripe(now)]);
-  const liveJourneys = [...(attioLive?.journeys ?? []), ...(ghlLive?.journeys ?? [])];
-  // Stripe money alone makes the funnel live — buyers must never be gated
-  // behind whether a CRM source happened to answer.
+  const ghlJourneys = ghlLive?.journeys ?? [];
+  // Live HighLevel is the sales CRM: do not mix Attio rows or Stripe-created
+  // journeys into stage occupancy. Stripe-only / Attio-only funnels keep the
+  // generic merge path.
+  const liveJourneys =
+    ghlJourneys.length > 0 ? ghlJourneys : [...(attioLive?.journeys ?? [])];
   const isLive = liveJourneys.length > 0 || (stripeWins?.length ?? 0) > 0;
   const journeys = isLive
-    ? mergeStripeWins(mergeTrakyoTouches(liveJourneys, await deps.trakyo()), stripeWins ?? []).filter(
-        (j) => !venture || j.venture === venture,
-      )
+    ? mergeStripeWins(
+        mergeTrakyoTouches(liveJourneys, await deps.trakyo()),
+        ghlJourneys.length > 0 ? [] : (stripeWins ?? []),
+      ).filter((j) => !venture || j.venture === venture)
     : deps.seed(venture);
   return { journeys, isLive, attioLive, ghlLive, stripeWins };
 }
@@ -66,6 +70,7 @@ export async function composeFunnelJourneys(
  *  the page's badge and the route's `source` field read identically. */
 export function funnelSourceLabel(c: FunnelComposition): string {
   if (!c.isLive) return 'seed';
+  if (c.ghlLive?.journeys.length) return 'ghl';
   return (
     [
       c.attioLive?.journeys.length ? 'attio' : null,

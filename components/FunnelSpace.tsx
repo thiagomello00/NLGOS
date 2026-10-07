@@ -94,11 +94,14 @@ export function FunnelSpace({
   nodes,
   summary,
   initialLeadId,
+  crmLocked = false,
 }: {
   nodes: FunnelSpaceNode[];
   summary: FunnelSummary;
   /** Deep link (?lead=) — the attention rail pins this lead's dossier. */
   initialLeadId?: string | null;
+  /** Live HighLevel: stage occupancy is current CRM state, not quiet-time decay. */
+  crmLocked?: boolean;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
@@ -296,7 +299,9 @@ export function FunnelSpace({
             className="h-2 w-2 rounded-full"
             style={{ background: 'color-mix(in oklab, var(--err) 70%, var(--funnel-s1))', opacity: 0.6 }}
           />{' '}
-          fades red after {DECAY_FADE_START}d quiet → archive at {DECAY_DAYS}d
+          {crmLocked
+            ? 'current HighLevel stage · quiet time is age, not membership'
+            : `fades red after ${DECAY_FADE_START}d quiet → archive at ${DECAY_DAYS}d`}
         </span>
         <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[var(--ok)]" /> converted</span>
         <span className="ml-auto">size + closeness = ICP fit · movement resets the clock · click a node</span>
